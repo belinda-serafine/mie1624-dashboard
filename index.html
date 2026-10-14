@@ -1,0 +1,728 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Developer Pay Review</title>
+<meta name="description" content="Client dashboard: salary differences between remote and hybrid developers, and between education levels in North America (Stack Overflow 2025 survey).">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: a single reading column (max 1080px) under a sticky section bar; each finding = chart panel + plain-language "what it means" + collapsible technical detail. */
+:root{
+  --bg:#f5f7f8; --panel:#ffffff; --ink:#14212b; --ink-2:#4a5a66; --ink-3:#6f7f8a;
+  --line:#dbe2e6; --soft:#eaf0f3; --accent:#0e6b74; --accent-ink:#ffffff;
+  --s1:#2a78d6; --s2:#eb6834; --s3:#1baf7a; --zero:#8a969e;
+  --seq-lo:#e3eefb; --seq-hi:#0d366b;
+  --good:#0ca30c; --critical:#d03b3b;
+  --f-display:"Bricolage Grotesque", "Avenir Next", "Segoe UI", system-ui, sans-serif;
+  --f-body:"Source Sans 3", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --f-mono:"JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0f1519; --panel:#172026; --ink:#e8eef1; --ink-2:#b4c1c8; --ink-3:#8b9aa3;
+  --line:#2a363e; --soft:#1e2a31; --accent:#4fb8c2; --accent-ink:#0b1417;
+  --s1:#3987e5; --s2:#d95926; --s3:#199e70; --zero:#7d8a92;
+  --seq-lo:#1b2f45; --seq-hi:#cde2fb; color-scheme:dark;
+}}
+:root[data-theme="dark"]{
+  --bg:#0f1519; --panel:#172026; --ink:#e8eef1; --ink-2:#b4c1c8; --ink-3:#8b9aa3;
+  --line:#2a363e; --soft:#1e2a31; --accent:#4fb8c2; --accent-ink:#0b1417;
+  --s1:#3987e5; --s2:#d95926; --s3:#199e70; --zero:#7d8a92;
+  --seq-lo:#1b2f45; --seq-hi:#cde2fb; color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.55;margin:0}
+.wrap{max-width:1080px;margin:0 auto;padding-inline:20px}
+h1,h2,h3{font-family:var(--f-display);text-wrap:balance;margin:0;line-height:1.15}
+h1{font-size:clamp(1.9rem,4.4vw,2.8rem);font-weight:700;letter-spacing:-.01em}
+h2{font-size:clamp(1.45rem,3vw,1.9rem);font-weight:700}
+h3{font-size:1.15rem;font-weight:700}
+p{margin:0}
+.mono,.num{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.eyebrow{font-size:.78rem;letter-spacing:.09em;text-transform:uppercase;color:var(--accent);font-weight:700}
+.muted{color:var(--ink-2)}
+.small{font-size:.88rem}
+a{color:var(--accent)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+header.top{padding-block:40px 28px;border-bottom:1px solid var(--line);background:var(--panel)}
+header.top .wrap{display:grid;gap:14px}
+.meta{display:flex;flex-wrap:wrap;gap:8px 22px;font-size:.9rem;color:var(--ink-2)}
+.meta b{color:var(--ink);font-weight:600}
+
+nav.bar{position:sticky;top:env(safe-area-inset-top,0px);z-index:10;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+nav.bar .wrap{display:flex;gap:4px;overflow-x:auto;padding-block:8px;scrollbar-width:thin}
+nav.bar a{flex:none;text-decoration:none;color:var(--ink-2);font-weight:600;font-size:.9rem;padding:6px 12px;border-radius:999px}
+nav.bar a:hover{background:var(--soft);color:var(--ink)}
+nav.bar a.on{background:var(--accent);color:var(--accent-ink)}
+
+main{display:grid;gap:56px;padding-block:36px 64px}
+section{display:grid;gap:22px;scroll-margin-top:64px}
+.sec-head{display:grid;gap:8px;max-width:72ch}
+.sub{display:grid;gap:14px;scroll-margin-top:64px}
+.sub-head{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 12px}
+.qtag{font-family:var(--f-mono);font-size:.78rem;font-weight:600;color:var(--accent);border:1px solid var(--accent);border-radius:4px;padding:1px 6px}
+.xtag{font-family:var(--f-mono);font-size:.78rem;font-weight:600;color:var(--ink-3);border:1px dashed var(--ink-3);border-radius:4px;padding:1px 6px}
+
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:20px;display:grid;gap:14px;min-width:0}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px}
+.grid2>*{min-width:0}
+.chart{position:relative;width:100%;min-width:0}
+.chart canvas{display:block}
+.legend{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:.88rem;color:var(--ink-2)}
+.legend span{display:inline-flex;align-items:center;gap:7px}
+.sw{width:12px;height:12px;border-radius:3px;display:inline-block;flex:none}
+.sw.dash{height:0;width:18px;border-top:2px dashed;border-radius:0}
+
+.means{border-left:3px solid var(--accent);background:var(--soft);padding:12px 16px;border-radius:0 8px 8px 0;display:grid;gap:6px;max-width:80ch}
+.means .lbl{font-size:.75rem;letter-spacing:.08em;text-transform:uppercase;font-weight:700;color:var(--accent)}
+.diag{font-size:.95rem;color:var(--ink-2);max-width:80ch}
+.diag b{color:var(--ink)}
+
+details{border-top:1px solid var(--line);padding-top:10px}
+summary{cursor:pointer;font-weight:600;color:var(--ink-2);font-size:.92rem}
+summary:hover{color:var(--ink)}
+details[open] summary{margin-bottom:10px}
+
+.tbl{overflow-x:auto;max-width:100%}
+table{border-collapse:collapse;width:100%;font-size:.92rem}
+th,td{padding:7px 12px;text-align:right;border-bottom:1px solid var(--line);white-space:nowrap}
+th:first-child,td:first-child{text-align:left}
+thead th{font-size:.78rem;letter-spacing:.05em;text-transform:uppercase;color:var(--ink-3);font-weight:700}
+td{font-family:var(--f-mono);font-variant-numeric:tabular-nums;font-size:.86rem}
+td:first-child{font-family:var(--f-body);font-size:.92rem;color:var(--ink-2)}
+tr.hl td{background:var(--soft)}
+pre.out{font-family:var(--f-mono);font-size:.8rem;background:var(--soft);border-radius:8px;padding:12px 14px;overflow-x:auto;margin:0;color:var(--ink);line-height:1.5}
+
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;flex-wrap:wrap}
+.seg button{font:inherit;font-size:.86rem;font-weight:600;border:0;background:transparent;color:var(--ink-2);padding:6px 12px;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
+.ctrl{display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px;font-size:.88rem;color:var(--ink-2)}
+.ctrl label{display:inline-flex;gap:6px;align-items:center;cursor:pointer}
+
+/* executive summary */
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}
+.kpi{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:16px 18px;display:grid;gap:4px;align-content:start}
+.kpi .k{font-size:.82rem;color:var(--ink-2);font-weight:600}
+.kpi .v{font-family:var(--f-display);font-size:1.9rem;font-weight:700;line-height:1.1}
+.kpi .d{font-size:.86rem;color:var(--ink-2)}
+.pill{display:inline-flex;align-items:center;gap:5px;font-size:.75rem;font-weight:700;border-radius:999px;padding:2px 9px;width:max-content;margin-top:4px}
+.pill.sig{background:color-mix(in srgb,var(--good) 16%,transparent);color:var(--ink)}
+.pill.sig::before{content:"✓";color:var(--good)}
+.pill.ns{background:var(--soft);color:var(--ink-2)}
+.pill.ns::before{content:"–"}
+.takeaways{display:grid;gap:12px;margin:0;padding:0;list-style:none;counter-reset:t}
+.takeaways li{display:grid;grid-template-columns:28px 1fr;gap:10px;max-width:86ch}
+.takeaways li::before{counter-increment:t;content:counter(t);font-family:var(--f-display);font-weight:700;color:var(--accent-ink);background:var(--accent);border-radius:50%;width:26px;height:26px;display:grid;place-items:center;font-size:.85rem}
+
+.callout{border:1px solid var(--line);border-radius:10px;padding:14px 16px;background:var(--panel);font-size:.92rem;color:var(--ink-2);display:grid;gap:6px}
+.callout b{color:var(--ink)}
+.cmp{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
+.cmp>div{background:var(--soft);border-radius:8px;padding:12px 14px;display:grid;gap:2px}
+.cmp .k{font-size:.8rem;color:var(--ink-2);font-weight:600}
+.cmp .v{font-family:var(--f-mono);font-size:1.05rem;font-weight:600}
+dl.gl{display:grid;grid-template-columns:minmax(120px,180px) 1fr;gap:8px 18px;margin:0}
+dl.gl dt{font-weight:700}
+dl.gl dd{margin:0;color:var(--ink-2)}
+@media (max-width:560px){dl.gl{grid-template-columns:1fr}dl.gl dd{margin-bottom:8px}.panel{padding:14px}}
+footer{border-top:1px solid var(--line);padding-block:24px 40px;color:var(--ink-3);font-size:.85rem}
+@media (prefers-reduced-motion: reduce){*{scroll-behavior:auto!important}}
+html{scroll-behavior:smooth}
+</style>
+</head>
+<body>
+
+
+<header class="top">
+  <div class="wrap">
+    <span class="eyebrow">Compensation &amp; Work-Mode Review · Findings Dashboard</span>
+    <h1>Developer Pay Review: Remote Work and Education</h1>
+    <p class="muted" style="max-width:72ch">What the 2025 Stack Overflow Developer Survey says about how pay differs between remote and hybrid developers, and between education levels for developers in the US and Canada. Prepared to support your remote-work and hiring policy review.</p>
+    <div class="meta">
+      <span>Source <b>Stack Overflow Developer Survey 2025 (cleaned)</b></span>
+      <span>Respondents with salary <b class="num">20,407</b></span>
+      <span>Currency <b>USD, annual</b></span>
+      <span>Significance level <b class="num">α = 0.05</b></span>
+    </div>
+  </div>
+</header>
+
+<nav class="bar" aria-label="Sections">
+  <div class="wrap">
+    <a href="#summary">Summary</a>
+    <a href="#workforce">1 · Workforce snapshot</a>
+    <a href="#remote">2 · Remote vs hybrid</a>
+    <a href="#education">3 · Education</a>
+    <a href="#more">More views</a>
+    <a href="#notes">Method notes</a>
+  </div>
+</nav>
+
+<main class="wrap">
+
+<!-- ================= EXECUTIVE SUMMARY ================= -->
+<section id="summary">
+  <div class="sec-head">
+    <span class="eyebrow">Executive summary</span>
+    <h2>Remote developers earn more, and so do developers with graduate or professional degrees</h2>
+  </div>
+  <div class="kpis">
+    <div class="kpi"><span class="k">Remote vs hybrid, average salary gap</span><span class="v num">+$12,071</span><span class="d">$113,861 remote vs $101,790 hybrid</span><span class="pill sig">Significant · p = 0.0098</span></div>
+    <div class="kpi"><span class="k">Likely range of that gap (95% CI)</span><span class="v num" style="font-size:1.45rem">$2,907 – $21,235</span><span class="d">Bootstrap check: $2,482 – $20,532. Both exclude $0.</span><span class="pill sig">Gap is real</span></div>
+    <div class="kpi"><span class="k">Remote vs hybrid, median salary</span><span class="v num">+$12,796</span><span class="d">$90,526 remote vs $77,730 hybrid</span><span class="pill sig">Mood's test p ≈ 1.3 × 10⁻²⁵</span></div>
+    <div class="kpi"><span class="k">US &amp; Canada average salary by degree</span><span class="v num" style="font-size:1.45rem">$160,988 → $197,701</span><span class="d">Bachelor's → Master's ($182,221) → Professional</span><span class="pill sig">ANOVA p = 2.7 × 10⁻⁸</span></div>
+  </div>
+  <div class="panel">
+    <h3>Key takeaways for your policy review</h3>
+    <ol class="takeaways">
+      <li><span><b>Remote work comes with higher pay in the market.</b> Fully remote developers earn about $12,000 (≈12%) more on average than hybrid developers, and the median remote developer earns about $12,800 more. If you reduce remote options, expect to compete against these higher remote pay levels when hiring and retaining talent.</span></li>
+      <li><span><b>The gap holds up under every test we ran.</b> A classic t-test, a version that allows for unequal spread (Welch), a 10,000-sample bootstrap, and a median-based test all point the same way. We are confident the gap is not a fluke of the sample.</span></li>
+      <li><span><b>Education level is linked to pay in the US and Canada.</b> Average salaries rise from $160,988 (Bachelor's) to $182,221 (Master's) to $197,701 (Professional). The differences across the three groups are statistically significant, though the gap between Master's and Professional degrees on its own is not clearly established.</span></li>
+      <li><span><b>Satisfaction is fairly even across roles.</b> Most job titles average 6 to 8 out of 10, so pay differences between roles are much larger than satisfaction differences.</span></li>
+      <li><span><b>These are associations, not proof of cause.</b> Remote workers in the survey are more concentrated in high-paying countries such as the US, and role and seniority also differ between groups. See <a href="#more">More views</a> for a country-by-country check.</span></li>
+    </ol>
+  </div>
+</section>
+
+<!-- ================= Q1 EDA ================= -->
+<section id="workforce">
+  <div class="sec-head">
+    <span class="eyebrow">Part 1 · Exploratory analysis</span>
+    <h2>Workforce snapshot: satisfaction, pay and age</h2>
+    <p class="muted">A first look at the full survey (all 20,407 respondents, before any outlier removal) to understand who is in the data and spot anything unusual.</p>
+  </div>
+
+  <div class="sub" id="q1a">
+    <div class="sub-head"><span class="qtag">Q1 · Figure 1</span><h3>Average job satisfaction by job title</h3></div>
+    <div class="panel">
+      <div class="ctrl"><label><input type="checkbox" id="q1a-small" checked> Shade titles with fewer than 30 satisfaction responses</label></div>
+      <div class="chart" style="height:780px"><canvas id="c-q1a" role="img" aria-label="Horizontal bar chart of average job satisfaction (0 to 10) for 32 job titles, sorted from highest to lowest"></canvas></div>
+      <div class="legend" id="lg-q1a"></div>
+      <p class="diag"><b>Diagnostic:</b> Most job satisfactions are between a small range of 6 and 8 out of 10, and the outlier is the highest average job, 'Retired', at 10 out of 10.</p>
+      <div class="means"><span class="lbl">What this means for you</span><p>Satisfaction barely moves across roles. The "Retired" score of 10 comes from a single respondent, so it should be ignored. Support and QA roles sit at the bottom (about 6.0 to 6.6), which may be worth watching for retention.</p></div>
+    </div>
+  </div>
+
+  <div class="sub" id="q1b">
+    <div class="sub-head"><span class="qtag">Q1 · Figure 2</span><h3>Mean salary by job title</h3></div>
+    <div class="panel">
+      <div class="ctrl"><div class="seg" role="group" aria-label="Statistic"><button id="q1b-mean" aria-pressed="true">Mean (as analysed)</button><button id="q1b-med" aria-pressed="false">Median (extra view)</button></div></div>
+      <div class="chart" style="height:780px"><canvas id="c-q1b" role="img" aria-label="Horizontal bar chart of mean annual salary in USD for 32 job titles, sorted from highest to lowest"></canvas></div>
+      <p class="diag"><b>Diagnostic:</b> The mean salary for Financial analysts or engineers is exceptionally high, suggesting it may include a few high earners, while other jobs have relatively similar averages, except for student who earns less than half of the second lowest earning job title.</p>
+      <div class="means"><span class="lbl">What this means for you</span><p>Switch to "Median" to see the effect of a few very high earners: the financial analyst average of $501,248 drops to a median of $87,249. Medians give a more realistic picture of a typical salary. Senior leadership and engineering managers earn the most in typical terms.</p></div>
+    </div>
+  </div>
+
+  <div class="sub" id="q1c">
+    <div class="sub-head"><span class="qtag">Q1 · Figure 3</span><h3>Annual salary vs. age</h3></div>
+    <div class="panel">
+      <div class="ctrl"><label><input type="checkbox" id="q1c-med" checked> Show median salary by age (extra view)</label></div>
+      <div class="chart" style="height:440px"><canvas id="c-q1c" role="img" aria-label="Density chart of annual salary (log scale) against age"></canvas></div>
+      <div class="legend" id="lg-q1c"></div>
+      <p class="small muted">To keep the public dashboard free of individual-level records, each respondent is counted into a 1-year × 0.1-log-salary cell; darker cells hold more people. Salary uses a log scale (as in the notebook) because pay is highly right-skewed.</p>
+      <p class="diag"><b>Diagnostic:</b> Most survey respondents are between 18 and 65 years old, with fewer observations between 65 and 100. Values below 10 and above 100 are anomalies and could be data entry errors.</p>
+      <div class="means"><span class="lbl">What this means for you</span><p>Typical pay climbs sharply from the early 20s (median about $24,000 to $29,000) to the mid-30s (about $93,000), then rises slowly to roughly $100,000 to $117,000 after 45. Both pay and respondent counts change in steps at ages 25, 35, 45 and 55, which suggests age was originally collected in ranges. A handful of impossible ages (1, 3, 9, 126, 151) are data-entry errors and have little influence on the results.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= Q2 ================= -->
+<section id="remote">
+  <div class="sec-head">
+    <span class="eyebrow">Part 2 · Hybrid vs remote</span>
+    <h2>Do remote developers earn more than hybrid developers?</h2>
+    <p class="muted">Yes. We compared 7,803 hybrid and 6,933 remote developers using six complementary methods.</p>
+  </div>
+
+  <div class="sub" id="q2a">
+    <div class="sub-head"><span class="qtag">Q2a</span><h3>Descriptive statistics</h3></div>
+    <div class="panel">
+      <div class="ctrl"><div class="seg" role="group" aria-label="Outlier handling"><button id="q2a-before" aria-pressed="false">Before outlier removal</button><button id="q2a-after" aria-pressed="true">After outlier removal (used)</button></div></div>
+      <div class="tbl"><table id="t-q2a"></table></div>
+      <div class="callout"><b>Outlier decision</b><span>Top 5 salaries in the dataset: <span class="mono" id="top5"></span>. The highest salary, $33M, is almost twice the second highest, so it is an outlier and was removed. All other values were kept. Removing it lowered the remote mean from $118,684 to $113,861 and the remote standard deviation from $442,810 to $186,624; the hybrid group is unchanged.</span></div>
+      <div class="means"><span class="lbl">What this means for you</span><p>Remote developers earn more at the middle and top of the range: the median is $12,796 higher and the 75th percentile is $150,000 vs $116,015. At the bottom (25th percentile) the two groups are almost identical.</p></div>
+    </div>
+  </div>
+
+  <div class="sub" id="q2b">
+    <div class="sub-head"><span class="qtag">Q2b</span><h3>Two-sample t-test: manual vs built-in</h3></div>
+    <div style="display:grid;gap:16px">
+      <div class="panel">
+        <h3 style="font-size:1rem">Step-by-step manual calculation</h3>
+        <div class="tbl"><table>
+          <thead><tr><th>Step</th><th>Hybrid</th><th>Remote</th></tr></thead>
+          <tbody>
+            <tr><td>1. Sample size, n</td><td>7,803</td><td>6,933</td></tr>
+            <tr><td>2. Mean (USD)</td><td>101,790.28</td><td>113,861.33</td></tr>
+            <tr><td>3. Variance</td><td>1.2059e+11</td><td>3.4829e+10</td></tr>
+            <tr><td>4. Pooled SD (USD)</td><td colspan="2">283,271.53</td></tr>
+            <tr><td>5. Degrees of freedom</td><td colspan="2">14,734</td></tr>
+            <tr class="hl"><td>6. t-value</td><td colspan="2">2.5819</td></tr>
+            <tr class="hl"><td>7. p-value (two-tailed)</td><td colspan="2">0.0098</td></tr>
+          </tbody></table></div>
+        <details><summary>Formulas used</summary>
+          <pre class="out">s_p = √[ ((n_r−1)·var_r + (n_h−1)·var_h) / (n_r + n_h − 2) ]
+t   = (mean_r − mean_h) / ( s_p · √(1/n_r + 1/n_h) )
+p   = 2 · P(T_df &gt; |t|),  df = n_r + n_h − 2
+
+t-value = 2.58192643415008
+p-value = 0.009834615719730384   → Reject H0</pre></details>
+      </div>
+      <div class="panel">
+        <h3 style="font-size:1rem">Comparison with Python's built-in test</h3>
+        <div class="tbl"><table>
+          <thead><tr><th>Method</th><th>t</th><th>p</th><th>df</th><th>Result</th></tr></thead>
+          <tbody>
+            <tr><td>Manual (pooled)</td><td>2.5819</td><td>0.0098</td><td>14,734</td><td>Reject H₀</td></tr>
+            <tr><td>scipy, equal_var=True</td><td>2.5819</td><td>0.0098</td><td>14734.0</td><td>Reject H₀</td></tr>
+            <tr><td>Welch, equal_var=False</td><td>2.6675</td><td>0.0077</td><td>12242.59</td><td>Reject H₀</td></tr>
+          </tbody></table></div>
+        <p class="diag"><b>Discrepancies:</b> none. The manual and built-in results match exactly. <b>Assumptions:</b> the variances are unequal (1.2059e+11 vs 3.4829e+10), so Welch's t-test is better. It gives a slightly smaller p-value but reaches the same conclusion.</p>
+      </div>
+    </div>
+    <div class="means"><span class="lbl">What the p-value tells you</span><p>The p-value of 0.0098 means that if remote and hybrid developers truly earned the same on average, a gap this large would show up by chance less than 1% of the time. That is below the 5% threshold, so we reject the null hypothesis: there is statistically significant evidence of a difference, with remote workers earning more on average than hybrid workers.</p></div>
+  </div>
+
+  <div class="sub" id="q2c">
+    <div class="sub-head"><span class="qtag">Q2c</span><h3>Bootstrapped distributions (10,000 replications)</h3></div>
+    <p class="muted" style="max-width:80ch">We re-drew each group 10,000 times (each resample the same size as its group: 7,803 hybrid, 6,933 remote) and recorded the average each time. This shows how much the average could plausibly vary.</p>
+    <div class="panel">
+      <h3 style="font-size:1rem">Figure A · Bootstrap distributions of mean salary</h3>
+      <div class="chart" style="height:340px"><canvas id="c-q2c1" role="img" aria-label="Overlapping histograms of 10,000 bootstrapped mean salaries for hybrid and remote workers"></canvas></div>
+      <div class="legend" id="lg-q2c1"></div>
+    </div>
+    <div class="grid2">
+      <div class="panel">
+        <h3 style="font-size:1rem">Figure B · Distribution of difference in mean salary (remote − hybrid)</h3>
+        <div class="chart" style="height:300px"><canvas id="c-q2c2" role="img" aria-label="Histogram of bootstrapped difference in mean salary, remote minus hybrid"></canvas></div>
+        <div class="legend" id="lg-q2c2"></div>
+      </div>
+      <div class="panel">
+        <h3 style="font-size:1rem">Figure C · Standardized distribution of difference in mean salary</h3>
+        <div class="chart" style="height:300px"><canvas id="c-q2c3" role="img" aria-label="Histogram of the standardized bootstrapped difference in mean salary"></canvas></div>
+        <div class="legend" id="lg-q2c3"></div>
+      </div>
+    </div>
+    <div class="means"><span class="lbl">What this means for you</span><p>The two bell curves barely overlap, and the difference curve sits almost entirely above $0: only 0.72% of the 10,000 resamples showed hybrid earning as much as or more than remote. Standardized (difference divided by its standard error), the curve centres at 2.582, matching the t-value of 2.5819.</p></div>
+  </div>
+
+  <div class="sub" id="q2d">
+    <div class="sub-head"><span class="qtag">Q2d</span><h3>t-test on bootstrapped data</h3></div>
+    <div class="panel">
+      <div class="tbl"><table>
+        <thead><tr><th>Data</th><th>t</th><th>p</th><th>df</th><th>Result (<span style="text-transform:none">α</span> = 0.05)</th></tr></thead>
+        <tbody>
+          <tr><td>Original sample (Q2b)</td><td>2.5819</td><td>0.0098</td><td>14734.0</td><td>Reject H₀</td></tr>
+          <tr class="hl"><td>Bootstrapped means</td><td>265.2385</td><td>0.0000</td><td>19998.0</td><td>Reject H₀</td></tr>
+        </tbody></table></div>
+      <div class="means"><span class="lbl">What this means for you</span><p>Same conclusion, but the bootstrap p-value is far smaller. That is not extra evidence: the test treats 10,000 resampled averages as if they were 10,000 independent people, which artificially inflates the sample size. The original-sample p-value of 0.0098 is the one to rely on.</p></div>
+    </div>
+  </div>
+
+  <div class="sub" id="q2e">
+    <div class="sub-head"><span class="qtag">Q2e</span><h3>95% confidence intervals for the salary gap</h3></div>
+    <div class="panel">
+      <div class="chart" style="height:200px"><canvas id="c-q2e" role="img" aria-label="Interval plot comparing the formula-based and bootstrap 95% confidence intervals for the remote minus hybrid mean salary difference"></canvas></div>
+      <div class="tbl"><table>
+        <thead><tr><th>Method</th><th>Lower (USD)</th><th>Upper (USD)</th><th>Includes $0?</th></tr></thead>
+        <tbody>
+          <tr><td>Formula-based (t-distribution, original data)</td><td>2,907.05</td><td>21,235.05</td><td>No</td></tr>
+          <tr><td>Bootstrap (2.5th–97.5th percentile)</td><td>2,482.15</td><td>20,531.61</td><td>No</td></tr>
+        </tbody></table></div>
+      <details><summary>Raw notebook output</summary><pre class="out">Formula-based approach: 2907.053682806223 21235.05467170664
+Boostrap approach: [ 2482.15064749 20531.61255668]</pre></details>
+      <div class="means"><span class="lbl">What this means for you</span><p>Both methods agree that remote developers earn between roughly $2,500 and $21,000 more per year on average. Neither range includes zero, so both reach the same conclusion. The small difference between the two comes from unequal variance and right skew: a few very high earners remain even after removing the top outlier.</p></div>
+    </div>
+  </div>
+
+  <div class="sub" id="q2f">
+    <div class="sub-head"><span class="qtag">Q2f</span><h3>Median comparison: Mood's median test vs bootstrapped medians</h3></div>
+    <div class="grid2">
+      <div class="panel">
+        <h3 style="font-size:1rem">Mood's median test · share above the overall median ($81,909)</h3>
+        <div class="chart" style="height:220px"><canvas id="c-q2f1" role="img" aria-label="Stacked bars showing how many hybrid and remote workers earn above or at-or-below the overall median"></canvas></div>
+        <div class="legend" id="lg-q2f1"></div>
+        <div class="tbl"><table>
+          <thead><tr><th>Contingency table</th><th>Hybrid</th><th>Remote</th></tr></thead>
+          <tbody><tr><td>Above median</td><td>3,584</td><td>3,784</td></tr><tr><td>At or below median</td><td>4,219</td><td>3,149</td></tr></tbody></table></div>
+      </div>
+      <div class="panel">
+        <h3 style="font-size:1rem">Bootstrapped medians (10,000 each) <span class="xtag">extra view</span></h3>
+        <div class="chart" style="height:220px"><canvas id="c-q2f2" role="img" aria-label="Histograms of 10,000 bootstrapped median salaries for hybrid and remote workers"></canvas></div>
+        <div class="legend" id="lg-q2f2"></div>
+        <p class="small muted">Plotted from the same bootstrapped medians used in the notebook's test.</p>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="tbl"><table>
+        <thead><tr><th>Test</th><th>Statistic</th><th>p-value</th><th>Result</th></tr></thead>
+        <tbody>
+          <tr><td>Mood's median test</td><td>χ² = 109.4902</td><td>1.2672835968463248e-25</td><td>Reject H₀</td></tr>
+          <tr><td>Bootstrapped medians (t-test, df 19998.0)</td><td>t = 820.4392</td><td>0.0000</td><td>Reject H₀</td></tr>
+        </tbody></table></div>
+      <div class="means"><span class="lbl">What this means for you</span><p>Looking at the typical (median) developer instead of the average, the remote advantage is even clearer: 55% of remote developers earn above the overall median compared with 46% of hybrid developers. Mood's p-value is almost 0, and the p-value from bootstrapping is also 0.0000, mainly due to inflated sample size. Both reject the null hypothesis.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= Q3 ================= -->
+<section id="education">
+  <div class="sec-head">
+    <span class="eyebrow">Part 3 · Education level (US &amp; Canada)</span>
+    <h2>Does a higher degree mean higher pay?</h2>
+    <p class="muted">We compared Bachelor's, Master's and Professional degree holders working in the US and Canada using one-way ANOVA (after the $33M outlier was removed).</p>
+  </div>
+
+  <div class="sub" id="q3a">
+    <div class="sub-head"><span class="qtag">Q3a</span><h3>Descriptive statistics</h3></div>
+    <div class="panel">
+      <div class="tbl"><table id="t-q3a"></table></div>
+      <div class="means"><span class="lbl">What this means for you</span><p>Each step up in education comes with a higher average and median salary. Note the group sizes: Professional degree holders are the smallest group (301), so their figures are less precise.</p></div>
+    </div>
+  </div>
+
+  <div class="sub" id="q3b">
+    <div class="sub-head"><span class="qtag">Q3b</span><h3>One-way ANOVA</h3></div>
+    <div class="panel">
+      <div class="cmp">
+        <div><span class="k">F-value</span><span class="v">17.4966</span></div>
+        <div><span class="k">p-value</span><span class="v">2.70 × 10⁻⁸</span></div>
+        <div><span class="k">Result at α = 0.05</span><span class="v">Reject H₀</span></div>
+      </div>
+      <details><summary>Raw notebook output</summary><pre class="out">F-value: 17.496593804540815
+p-value: 2.7018236862697174e-08</pre></details>
+      <div class="means"><span class="lbl">What this means for you</span><p>The p-value is far below 0.05, so we reject the null hypothesis: at least one education group's average salary is statistically different from the others. ANOVA does not say which pairs differ; the bootstrap views below help with that.</p></div>
+    </div>
+  </div>
+
+  <div class="sub" id="q3c">
+    <div class="sub-head"><span class="qtag">Q3c</span><h3>Bootstrapped distributions (10,000 replications)</h3></div>
+    <div class="panel">
+      <h3 style="font-size:1rem">Figure A · Bootstrap distributions of mean salary</h3>
+      <div class="chart" style="height:340px"><canvas id="c-q3c1" role="img" aria-label="Three overlapping histograms of bootstrapped mean salary for Bachelor's, Master's and Professional degree holders"></canvas></div>
+      <div class="legend" id="lg-q3c1"></div>
+    </div>
+    <div class="panel">
+      <div class="ctrl"><span>Highlight comparison:</span><div class="seg" role="group" aria-label="Highlight pair" id="q3-pair"><button data-k="all" aria-pressed="true">All</button><button data-k="pm" aria-pressed="false">Professional − Master</button><button data-k="pb" aria-pressed="false">Professional − Bachelor</button><button data-k="mb" aria-pressed="false">Master − Bachelor</button></div></div>
+      <div class="grid2">
+        <div style="display:grid;gap:10px;min-width:0">
+          <h3 style="font-size:1rem">Figure B · Pairwise difference in mean salary</h3>
+          <div class="chart" style="height:300px"><canvas id="c-q3c2" role="img" aria-label="Three histograms of bootstrapped pairwise differences in mean salary between education groups"></canvas></div>
+          <div class="legend" id="lg-q3c2"></div>
+        </div>
+        <div style="display:grid;gap:10px;min-width:0">
+          <h3 style="font-size:1rem">Figure C · Standardized pairwise difference</h3>
+          <div class="chart" style="height:300px"><canvas id="c-q3c3" role="img" aria-label="Three histograms of standardized bootstrapped pairwise differences"></canvas></div>
+          <div class="legend" id="lg-q3c3"></div>
+        </div>
+      </div>
+    </div>
+    <div class="panel">
+      <h3 style="font-size:1rem">Pairwise bootstrap 95% intervals <span class="xtag">extra view</span></h3>
+      <div class="chart" style="height:210px"><canvas id="c-q3ci" role="img" aria-label="Interval plot of bootstrap 95 percent intervals for each pairwise education difference"></canvas></div>
+      <p class="small muted">2.5th–97.5th percentiles of the same bootstrapped differences shown in Figure B.</p>
+      <div class="means"><span class="lbl">What this means for you</span><p>Master's holders earn about $21,170 more than Bachelor's holders on average, and Professional holders about $36,728 more; neither range includes $0. Professional vs Master's (+$15,558) is less certain: its range runs from −$7,154 to +$40,828, so the data cannot rule out no difference between those two groups.</p></div>
+    </div>
+  </div>
+
+  <div class="sub" id="q3d">
+    <div class="sub-head"><span class="qtag">Q3d</span><h3>ANOVA on bootstrapped data</h3></div>
+    <div class="panel">
+      <div class="tbl"><table>
+        <thead><tr><th>Data</th><th>F</th><th>p</th><th>Result (<span style="text-transform:none">α</span> = 0.05)</th></tr></thead>
+        <tbody>
+          <tr><td>Original sample (Q3b)</td><td>17.496593804540815</td><td>2.7018236862697174e-08</td><td>Reject H₀</td></tr>
+          <tr class="hl"><td>Bootstrapped means</td><td>66010.10234082476</td><td>0.0</td><td>Reject H₀</td></tr>
+        </tbody></table></div>
+      <div class="means"><span class="lbl">What this means for you</span><p>Between the original sample and bootstrapped data, both ANOVAs reject the null hypothesis, but the bootstrapped p-value is lower. As in Part 2, ANOVA treats the bootstrap values as independent observations, which artificially inflates the sample size, so the bootstrap p-value is not as meaningful. Rely on the original-sample result.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= EXTRA ================= -->
+<section id="more">
+  <div class="sec-head">
+    <span class="eyebrow">Further views</span>
+    <h2>Additional context for your policy decision</h2>
+    <p class="muted">These views go beyond the commissioned tests. They use the same cleaned data (after removing the $33M outlier) and only aggregated figures.</p>
+  </div>
+  <div class="grid2">
+    <div class="panel">
+      <div class="sub-head"><span class="xtag">extra</span><h3>Salary across all four work arrangements</h3></div>
+      <div class="ctrl"><div class="seg" role="group" aria-label="Statistic"><button id="xm-med" aria-pressed="true">Median</button><button id="xm-mean" aria-pressed="false">Mean</button></div></div>
+      <div class="chart" style="height:260px"><canvas id="c-xmode" role="img" aria-label="Bar chart of salary by work arrangement"></canvas></div>
+      <p class="diag">In-person roles pay the least (median $48,726); flexible "your choice" arrangements sit close to hybrid.</p>
+    </div>
+    <div class="panel">
+      <div class="sub-head"><span class="xtag">extra</span><h3>Job satisfaction by work arrangement</h3></div>
+      <div class="chart" style="height:260px"><canvas id="c-xsat" role="img" aria-label="Bar chart of average job satisfaction by work arrangement"></canvas></div>
+      <p class="diag">Remote (7.31) and fully flexible (7.39) workers report slightly higher satisfaction than hybrid (7.11) and in-person (6.91) workers.</p>
+    </div>
+  </div>
+  <div class="panel">
+    <div class="sub-head"><span class="xtag">extra</span><h3>Where in the pay range does the remote premium appear?</h3></div>
+    <div class="chart" style="height:280px"><canvas id="c-xpct" role="img" aria-label="Grouped bars of salary percentiles for hybrid and remote workers"></canvas></div>
+    <div class="legend" id="lg-xpct"></div>
+    <p class="diag">The remote premium is concentrated in the upper half: at the 75th and 90th percentiles remote developers earn $34,000 to $38,000 more, while at the 10th percentile hybrid developers actually earn more.</p>
+  </div>
+  <div class="panel">
+    <div class="sub-head"><span class="xtag">extra</span><h3>Is the remote premium just a country effect?</h3></div>
+    <div class="chart" style="height:320px"><canvas id="c-xcty" role="img" aria-label="Grouped bars of median salary for hybrid and remote workers in six countries"></canvas></div>
+    <div class="legend" id="lg-xcty"></div>
+    <p class="diag">Countries with at least 150 respondents in each group. The US contributes the most remote workers (2,189) and pays the most, which inflates the overall remote average. Still, remote developers earn a higher median than hybrid developers within 5 of these 6 countries (India is the exception), so the premium is not only a country effect. In the US and Canada combined, the median is $155,000 remote vs $134,000 hybrid.</p>
+  </div>
+</section>
+
+<!-- ================= NOTES ================= -->
+<section id="notes">
+  <div class="sec-head">
+    <span class="eyebrow">Method notes</span>
+    <h2>How to read these results</h2>
+  </div>
+  <div class="panel">
+    <dl class="gl">
+      <dt>Mean vs median</dt><dd>The mean is the average; the median is the middle salary. Developer pay is pulled up by a few very high earners, so the median is closer to what a typical developer earns.</dd>
+      <dt>p-value</dt><dd>The probability of seeing a gap at least this large if there were truly no difference. Below 0.05 we call the result statistically significant.</dd>
+      <dt>95% confidence interval</dt><dd>A range that, with 95% confidence, contains the true difference. If it excludes $0, the difference is significant.</dd>
+      <dt>Bootstrap</dt><dd>Re-drawing the sample with replacement 10,000 times to see how much an average or median would vary from sample to sample.</dd>
+      <dt>Welch's t-test</dt><dd>A version of the t-test that does not assume both groups have the same spread. Used because hybrid salaries vary more than remote ones.</dd>
+      <dt>Mood's median test</dt><dd>Checks whether each group has a similar share of people above the overall median. Robust to extreme salaries.</dd>
+      <dt>ANOVA</dt><dd>Tests whether three or more group averages are all equal. A significant result means at least one differs.</dd>
+    </dl>
+    <p class="small muted">Data: Stack Overflow Developer Survey 2025, cleaned course dataset (rows with missing salary removed). Self-reported salaries converted to USD. One extreme salary ($33,552,715) was removed before Parts 2 and 3. Random seed 22; all figures on this page are reproduced from the analysis notebook. Only aggregated values are embedded in this page; no individual survey responses are published.</p>
+  </div>
+</section>
+</main>
+
+<footer><div class="wrap">Developer Pay Review · Analysis by Belinda Serafine · MIE1624 Assignment 1, Fall 2026</div></footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script>
+const D = {"q1_sat":[{"job":"Retired","v":10.0,"n":1},{"job":"Senior executive (C-suite, VP, etc.)","v":8.1124,"n":169},{"job":"Founder, technology or otherwise","v":8.0119,"n":84},{"job":"Student","v":7.9492,"n":59},{"job":"Product manager","v":7.68,"n":25},{"job":"Applied scientist","v":7.6212,"n":66},{"job":"Developer, game or graphics","v":7.5933,"n":150},{"job":"Financial analyst or engineer","v":7.5,"n":14},{"job":"Architect, software or solutions","v":7.4777,"n":1168},{"job":"Project manager","v":7.4634,"n":41},{"job":"UX, Research Ops or UI design professional","v":7.4545,"n":11},{"job":"Data scientist","v":7.441,"n":195},{"job":"Cybersecurity or InfoSec professional","v":7.3788,"n":66},{"job":"Other","v":7.3168,"n":262},{"job":"Academic researcher","v":7.3134,"n":134},{"job":"Engineering manager","v":7.3009,"n":452},{"job":"Developer, AI apps or physical AI","v":7.2987,"n":77},{"job":"DevOps engineer or professional","v":7.2755,"n":432},{"job":"Developer, full-stack","v":7.1915,"n":6146},{"job":"AI/ML engineer","v":7.1825,"n":263},{"job":"Developer, mobile","v":7.1417,"n":614},{"job":"Cloud infrastructure engineer","v":7.1369,"n":168},{"job":"Data engineer","v":7.1257,"n":366},{"job":"Developer, desktop or enterprise applications","v":7.1166,"n":926},{"job":"Developer, embedded applications or devices","v":7.0585,"n":650},{"job":"Developer, back-end","v":7.0582,"n":3262},{"job":"Developer, front-end","v":7.0455,"n":902},{"job":"Database administrator or engineer","v":7.0185,"n":54},{"job":"Data or business analyst","v":7.0,"n":43},{"job":"System administrator","v":6.625,"n":24},{"job":"Developer, QA or test","v":6.537,"n":108},{"job":"Support engineer or analyst","v":6.0385,"n":26}],"q1_sal":[{"job":"Financial analyst or engineer","v":501248.0,"n":46,"median":87248.5},{"job":"Retired","v":222534.0,"n":2,"median":222534.0},{"job":"Senior executive (C-suite, VP, etc.)","v":215633.14,"n":274,"median":139218.0},{"job":"Engineering manager","v":178747.67,"n":660,"median":133417.0},{"job":"Cybersecurity or InfoSec professional","v":153592.09,"n":169,"median":104015.0},{"job":"Founder, technology or otherwise","v":138610.63,"n":125,"median":97452.0},{"job":"Product manager","v":129927.54,"n":99,"median":110214.0},{"job":"Cloud infrastructure engineer","v":129036.8,"n":232,"median":104413.0},{"job":"Applied scientist","v":123069.44,"n":145,"median":104015.0},{"job":"Architect, software or solutions","v":119646.27,"n":1406,"median":102079.0},{"job":"AI/ML engineer","v":115249.37,"n":311,"median":88492.0},{"job":"Data scientist","v":107329.03,"n":305,"median":84512.0},{"job":"Data engineer","v":106940.68,"n":442,"median":80206.0},{"job":"DevOps engineer or professional","v":103265.32,"n":624,"median":87550.0},{"job":"Developer, back-end","v":102833.29,"n":3428,"median":80000.0},{"job":"Database administrator or engineer","v":102051.79,"n":86,"median":81210.0},{"job":"Developer, embedded applications or devices","v":99187.08,"n":698,"median":80766.5},{"job":"System administrator","v":95102.76,"n":211,"median":55148.0},{"job":"Developer, AI apps or physical AI","v":93749.73,"n":86,"median":69609.0},{"job":"Other","v":93187.23,"n":661,"median":70000.0},{"job":"Developer, full-stack","v":92795.35,"n":6457,"median":72509.0},{"job":"Project manager","v":89292.98,"n":135,"median":68924.0},{"job":"Developer, desktop or enterprise applications","v":87085.49,"n":981,"median":73536.0},{"job":"Developer, mobile","v":86974.45,"n":649,"median":69609.0},{"job":"Developer, game or graphics","v":81368.31,"n":158,"median":75205.0},{"job":"Academic researcher","v":79031.89,"n":447,"median":55818.0},{"job":"UX, Research Ops or UI design professional","v":76907.0,"n":36,"median":61324.0},{"job":"Developer, front-end","v":76573.1,"n":960,"median":63808.0},{"job":"Support engineer or analyst","v":75570.77,"n":104,"median":62648.0},{"job":"Developer, QA or test","v":71099.91,"n":169,"median":60038.0},{"job":"Data or business analyst","v":64740.16,"n":154,"median":57593.0},{"job":"Student","v":22006.84,"n":147,"median":13278.0}],"q1_age":{"yedges":[2.0,2.1,2.2,2.3,2.4,2.5,2.6,2.7,2.8,2.9,3.0,3.1,3.2,3.3,3.4,3.5,3.6,3.7,3.8,3.9,4.0,4.1,4.2,4.3,4.4,4.5,4.6,4.7,4.8,4.9,5.0,5.1,5.2,5.3,5.4,5.5,5.6,5.7,5.8,5.9,6.0,6.1,6.2,6.3,6.4,6.5,6.6,6.7,6.8,6.9,7.0,7.1,7.2,7.3,7.4,7.5,7.6],"cells":[[1,40,1],[3,30,1],[9,29,1],[18,0,1],[18,1,2],[18,4,1],[18,5,1],[18,6,1],[18,8,3],[18,9,1],[18,10,3],[18,11,3],[18,12,3],[18,13,4],[18,14,6],[18,15,3],[18,16,9],[18,17,8],[18,18,12],[18,19,12],[18,20,15],[18,21,12],[18,22,18],[18,23,24],[18,24,17],[18,25,16],[18,26,28],[18,27,24],[18,28,16],[18,29,15],[18,30,15],[18,31,2],[18,32,1],[18,33,2],[18,34,1],[19,0,2],[19,5,2],[19,7,1],[19,8,1],[19,9,3],[19,10,8],[19,11,4],[19,12,4],[19,13,2],[19,14,3],[19,15,7],[19,16,10],[19,17,7],[19,18,17],[19,19,11],[19,20,15],[19,21,11],[19,22,16],[19,23,22],[19,24,16],[19,25,21],[19,26,41],[19,27,28],[19,28,17],[19,29,15],[19,30,12],[19,31,8],[19,32,2],[19,33,1],[19,34,1],[19,35,1],[19,37,1],[19,40,1],[20,5,2],[20,6,1],[20,7,1],[20,8,1],[20,10,1],[20,11,2],[20,12,7],[20,13,9],[20,14,2],[20,15,6],[20,16,5],[20,17,10],[20,18,11],[20,19,15],[20,20,16],[20,21,18],[20,22,12],[20,23,20],[20,24,25],[20,25,26],[20,26,27],[20,27,16],[20,28,16],[20,29,9],[20,30,11],[20,31,5],[20,32,4],[20,33,4],[21,4,3],[21,5,1],[21,6,1],[21,7,2],[21,8,2],[21,9,1],[21,11,1],[21,12,2],[21,13,5],[21,14,3],[21,15,11],[21,16,10],[21,17,9],[21,18,4],[21,19,12],[21,20,16],[21,21,23],[21,22,12],[21,23,16],[21,24,20],[21,25,15],[21,26,33],[21,27,29],[21,28,19],[21,29,20],[21,30,7],[21,31,2],[21,32,4],[21,33,1],[21,35,2],[21,49,1],[22,1,1],[22,2,1],[22,4,2],[22,5,2],[22,6,1],[22,7,4],[22,8,1],[22,9,2],[22,10,3],[22,11,1],[22,12,3],[22,13,5],[22,14,4],[22,15,12],[22,16,7],[22,17,8],[22,18,12],[22,19,8],[22,20,16],[22,21,13],[22,22,12],[22,23,22],[22,24,20],[22,25,16],[22,26,32],[22,27,23],[22,28,20],[22,29,11],[22,30,10],[22,31,5],[22,33,2],[22,38,1],[22,39,1],[22,40,1],[23,3,2],[23,4,3],[23,5,5],[23,6,4],[23,7,1],[23,8,1],[23,10,5],[23,11,1],[23,12,6],[23,13,8],[23,14,6],[23,15,10],[23,16,9],[23,17,10],[23,18,8],[23,19,9],[23,20,13],[23,21,17],[23,22,22],[23,23,15],[23,24,22],[23,25,20],[23,26,18],[23,27,23],[23,28,25],[23,29,15],[23,30,7],[23,31,3],[23,32,1],[23,33,4],[23,34,2],[23,35,1],[23,36,1],[23,52,1],[24,2,1],[24,4,1],[24,5,2],[24,6,1],[24,7,3],[24,10,7],[24,11,4],[24,12,2],[24,13,6],[24,14,5],[24,15,5],[24,16,11],[24,17,11],[24,18,12],[24,19,11],[24,20,11],[24,21,19],[24,22,9],[24,23,16],[24,24,14],[24,25,24],[24,26,35],[24,27,18],[24,28,22],[24,29,9],[24,30,2],[24,31,5],[24,32,2],[24,33,2],[24,35,1],[24,38,1],[24,39,1],[24,40,1],[25,1,2],[25,4,1],[25,5,1],[25,6,1],[25,8,2],[25,9,2],[25,10,4],[25,11,2],[25,12,5],[25,13,3],[25,14,8],[25,15,4],[25,16,6],[25,17,12],[25,18,17],[25,19,8],[25,20,20],[25,21,12],[25,22,11],[25,23,18],[25,24,36],[25,25,55],[25,26,57],[25,27,90],[25,28,101],[25,29,99],[25,30,58],[25,31,44],[25,32,30],[25,33,23],[25,34,7],[25,35,4],[25,36,3],[25,37,2],[25,46,1],[26,0,1],[26,1,2],[26,2,1],[26,4,1],[26,6,1],[26,7,2],[26,8,5],[26,9,1],[26,10,2],[26,11,6],[26,12,3],[26,13,7],[26,14,4],[26,15,3],[26,16,6],[26,17,11],[26,18,7],[26,19,16],[26,20,11],[26,21,19],[26,22,22],[26,23,24],[26,24,39],[26,25,47],[26,26,58],[26,27,86],[26,28,89],[26,29,102],[26,30,82],[26,31,52],[26,32,28],[26,33,21],[26,34,7],[26,35,7],[26,36,5],[26,37,1],[26,38,2],[27,0,2],[27,1,1],[27,3,1],[27,4,4],[27,5,1],[27,6,1],[27,7,2],[27,8,4],[27,10,8],[27,11,4],[27,12,6],[27,13,7],[27,14,4],[27,15,2],[27,16,12],[27,17,9],[27,18,9],[27,19,12],[27,20,14],[27,21,13],[27,22,17],[27,23,22],[27,24,20],[27,25,39],[27,26,73],[27,27,81],[27,28,107],[27,29,78],[27,30,72],[27,31,42],[27,32,34],[27,33,20],[27,34,9],[27,35,9],[27,36,3],[27,37,1],[27,43,1],[28,0,2],[28,6,4],[28,8,1],[28,9,3],[28,10,2],[28,11,4],[28,12,6],[28,13,3],[28,14,7],[28,15,3],[28,16,9],[28,17,10],[28,18,10],[28,19,11],[28,20,12],[28,21,16],[28,22,12],[28,23,13],[28,24,35],[28,25,45],[28,26,84],[28,27,102],[28,28,99],[28,29,95],[28,30,66],[28,31,52],[28,32,36],[28,33,27],[28,34,7],[28,35,5],[28,36,3],[28,37,2],[28,38,1],[29,0,1],[29,1,1],[29,2,2],[29,5,3],[29,6,1],[29,9,1],[29,10,4],[29,11,3],[29,12,3],[29,13,8],[29,14,8],[29,15,4],[29,16,10],[29,17,6],[29,18,9],[29,19,20],[29,20,12],[29,21,18],[29,22,12],[29,23,32],[29,24,44],[29,25,42],[29,26,71],[29,27,91],[29,28,103],[29,29,97],[29,30,77],[29,31,46],[29,32,39],[29,33,13],[29,34,10],[29,35,5],[29,36,7],[29,37,1],[29,38,1],[29,39,1],[29,47,1],[29,49,1],[30,2,1],[30,4,1],[30,5,1],[30,6,2],[30,7,1],[30,8,1],[30,9,4],[30,10,1],[30,11,6],[30,12,2],[30,13,1],[30,14,4],[30,15,5],[30,16,4],[30,17,8],[30,18,4],[30,19,10],[30,20,12],[30,21,16],[30,22,21],[30,23,24],[30,24,32],[30,25,37],[30,26,54],[30,27,75],[30,28,90],[30,29,93],[30,30,77],[30,31,49],[30,32,32],[30,33,16],[30,34,6],[30,35,4],[30,36,4],[30,37,2],[30,39,1],[31,0,1],[31,1,3],[31,3,1],[31,5,1],[31,8,1],[31,9,4],[31,10,5],[31,11,6],[31,12,2],[31,13,5],[31,14,4],[31,15,6],[31,16,10],[31,17,10],[31,18,11],[31,19,8],[31,20,14],[31,21,17],[31,22,26],[31,23,20],[31,24,36],[31,25,53],[31,26,67],[31,27,77],[31,28,103],[31,29,93],[31,30,78],[31,31,52],[31,32,30],[31,33,25],[31,34,10],[31,35,6],[31,36,3],[31,37,1],[31,38,1],[32,1,1],[32,4,1],[32,6,2],[32,7,2],[32,8,2],[32,9,2],[32,10,2],[32,12,3],[32,13,2],[32,14,1],[32,15,5],[32,16,4],[32,17,11],[32,18,14],[32,19,15],[32,20,18],[32,21,20],[32,22,11],[32,23,23],[32,24,32],[32,25,36],[32,26,62],[32,27,66],[32,28,107],[32,29,108],[32,30,64],[32,31,58],[32,32,29],[32,33,17],[32,34,8],[32,35,1],[32,37,3],[33,0,1],[33,1,1],[33,3,2],[33,7,1],[33,8,1],[33,9,1],[33,10,2],[33,11,2],[33,12,1],[33,13,5],[33,14,6],[33,15,7],[33,16,6],[33,17,10],[33,18,12],[33,19,11],[33,20,14],[33,21,16],[33,22,14],[33,23,32],[33,24,33],[33,25,43],[33,26,69],[33,27,66],[33,28,112],[33,29,107],[33,30,69],[33,31,50],[33,32,27],[33,33,24],[33,34,2],[33,35,8],[33,36,4],[33,37,2],[33,38,1],[33,40,1],[33,41,1],[34,2,1],[34,5,3],[34,7,2],[34,9,4],[34,10,4],[34,11,5],[34,12,3],[34,13,5],[34,14,2],[34,15,3],[34,16,9],[34,17,9],[34,18,12],[34,19,10],[34,20,10],[34,21,17],[34,22,14],[34,23,29],[34,24,32],[34,25,39],[34,26,83],[34,27,84],[34,28,93],[34,29,92],[34,30,82],[34,31,46],[34,32,30],[34,33,16],[34,34,9],[34,35,4],[34,36,5],[34,37,3],[34,38,1],[34,39,1],[34,42,1],[35,0,1],[35,1,1],[35,3,2],[35,6,3],[35,8,1],[35,9,1],[35,10,1],[35,12,3],[35,13,2],[35,14,4],[35,15,3],[35,16,6],[35,17,3],[35,18,6],[35,19,3],[35,20,2],[35,21,7],[35,22,8],[35,23,12],[35,24,20],[35,25,14],[35,26,31],[35,27,52],[35,28,79],[35,29,96],[35,30,98],[35,31,66],[35,32,58],[35,33,49],[35,34,20],[35,35,4],[35,36,1],[35,37,2],[35,38,1],[35,39,1],[35,40,1],[36,1,3],[36,3,2],[36,8,2],[36,10,1],[36,11,1],[36,12,1],[36,13,3],[36,14,1],[36,15,2],[36,16,4],[36,17,7],[36,18,4],[36,19,2],[36,20,2],[36,21,1],[36,22,3],[36,23,8],[36,24,15],[36,25,16],[36,26,35],[36,27,50],[36,28,82],[36,29,105],[36,30,90],[36,31,68],[36,32,64],[36,33,54],[36,34,10],[36,35,10],[36,37,3],[36,38,1],[36,39,1],[36,40,1],[37,0,1],[37,1,1],[37,2,1],[37,3,1],[37,8,1],[37,12,1],[37,13,2],[37,14,1],[37,15,1],[37,16,1],[37,17,5],[37,18,5],[37,19,4],[37,20,4],[37,21,3],[37,22,4],[37,23,7],[37,24,18],[37,25,18],[37,26,45],[37,27,56],[37,28,52],[37,29,99],[37,30,82],[37,31,72],[37,32,63],[37,33,40],[37,34,17],[37,35,4],[37,36,6],[37,37,1],[37,38,3],[37,40,1],[37,43,1],[38,1,2],[38,8,1],[38,9,1],[38,10,1],[38,13,1],[38,15,3],[38,16,4],[38,17,5],[38,18,2],[38,19,2],[38,20,4],[38,21,4],[38,22,4],[38,23,10],[38,24,8],[38,25,20],[38,26,56],[38,27,54],[38,28,83],[38,29,118],[38,30,97],[38,31,75],[38,32,61],[38,33,38],[38,34,15],[38,35,5],[38,36,6],[38,37,2],[38,38,2],[38,39,1],[38,40,1],[38,41,1],[38,42,1],[38,51,1],[39,0,1],[39,4,1],[39,5,1],[39,10,2],[39,13,5],[39,14,2],[39,15,4],[39,16,6],[39,17,2],[39,18,2],[39,19,3],[39,20,2],[39,21,11],[39,22,4],[39,23,4],[39,24,12],[39,25,22],[39,26,43],[39,27,67],[39,28,75],[39,29,100],[39,30,108],[39,31,70],[39,32,73],[39,33,39],[39,34,17],[39,35,7],[39,36,6],[39,37,2],[39,38,3],[39,40,2],[39,41,1],[39,43,1],[39,48,1],[40,0,1],[40,4,2],[40,5,2],[40,6,1],[40,7,2],[40,11,1],[40,13,1],[40,15,6],[40,16,5],[40,17,6],[40,18,5],[40,19,5],[40,20,2],[40,21,2],[40,22,4],[40,23,13],[40,24,20],[40,25,19],[40,26,44],[40,27,41],[40,28,74],[40,29,101],[40,30,90],[40,31,65],[40,32,38],[40,33,45],[40,34,14],[40,35,7],[40,36,3],[40,37,4],[40,39,1],[41,0,3],[41,1,1],[41,2,2],[41,5,1],[41,8,1],[41,10,1],[41,13,2],[41,14,1],[41,15,5],[41,16,4],[41,17,6],[41,18,2],[41,19,2],[41,20,4],[41,21,6],[41,22,4],[41,23,5],[41,24,7],[41,25,15],[41,26,37],[41,27,56],[41,28,70],[41,29,106],[41,30,97],[41,31,67],[41,32,51],[41,33,40],[41,34,16],[41,35,10],[41,36,5],[41,38,3],[41,39,1],[41,42,1],[42,3,2],[42,4,1],[42,5,1],[42,10,2],[42,11,1],[42,12,3],[42,13,1],[42,15,4],[42,16,3],[42,17,3],[42,18,2],[42,19,8],[42,20,2],[42,21,8],[42,22,6],[42,23,3],[42,24,14],[42,25,16],[42,26,41],[42,27,61],[42,28,81],[42,29,100],[42,30,89],[42,31,68],[42,32,64],[42,33,32],[42,34,15],[42,35,9],[42,36,4],[42,37,3],[42,39,3],[42,40,1],[42,41,1],[43,0,2],[43,3,1],[43,4,1],[43,7,1],[43,8,1],[43,9,1],[43,10,2],[43,11,1],[43,14,3],[43,15,3],[43,17,3],[43,18,2],[43,19,6],[43,20,5],[43,21,11],[43,22,10],[43,23,7],[43,24,16],[43,25,23],[43,26,34],[43,27,63],[43,28,87],[43,29,101],[43,30,112],[43,31,63],[43,32,71],[43,33,49],[43,34,13],[43,35,9],[43,36,7],[43,37,5],[43,39,2],[43,41,1],[43,55,1],[44,0,1],[44,1,1],[44,2,1],[44,6,1],[44,7,2],[44,8,1],[44,9,1],[44,10,1],[44,11,1],[44,12,4],[44,13,1],[44,14,2],[44,16,3],[44,17,4],[44,18,4],[44,19,1],[44,20,6],[44,21,5],[44,22,6],[44,23,10],[44,24,14],[44,25,24],[44,26,34],[44,27,56],[44,28,65],[44,29,104],[44,30,107],[44,31,77],[44,32,69],[44,33,45],[44,34,9],[44,35,8],[44,36,6],[44,38,1],[44,40,2],[45,1,1],[45,2,1],[45,3,2],[45,4,1],[45,7,1],[45,15,1],[45,16,1],[45,18,1],[45,19,2],[45,20,1],[45,22,3],[45,23,6],[45,24,10],[45,25,9],[45,26,13],[45,27,15],[45,28,32],[45,29,45],[45,30,47],[45,31,35],[45,32,30],[45,33,19],[45,34,7],[45,35,1],[45,36,4],[45,38,1],[45,39,1],[45,45,1],[46,11,2],[46,15,1],[46,16,1],[46,17,2],[46,19,1],[46,20,2],[46,21,1],[46,22,1],[46,23,4],[46,24,2],[46,25,6],[46,26,9],[46,27,26],[46,28,33],[46,29,30],[46,30,46],[46,31,38],[46,32,26],[46,33,17],[46,34,4],[46,35,1],[46,36,5],[46,37,3],[46,40,1],[47,3,1],[47,8,1],[47,9,1],[47,10,3],[47,12,2],[47,14,1],[47,17,1],[47,20,2],[47,21,2],[47,22,3],[47,23,4],[47,24,2],[47,25,5],[47,26,19],[47,27,26],[47,28,25],[47,29,42],[47,30,47],[47,31,37],[47,32,29],[47,33,20],[47,34,3],[47,36,3],[47,37,1],[48,1,2],[48,10,2],[48,11,1],[48,14,2],[48,16,1],[48,17,1],[48,18,1],[48,20,1],[48,21,1],[48,22,1],[48,23,3],[48,24,8],[48,25,9],[48,26,18],[48,27,13],[48,28,34],[48,29,45],[48,30,45],[48,31,33],[48,32,33],[48,33,26],[48,34,9],[48,35,5],[48,36,2],[48,37,3],[48,38,1],[48,39,1],[48,40,1],[49,15,3],[49,16,2],[49,17,1],[49,18,1],[49,19,1],[49,20,2],[49,21,1],[49,22,2],[49,23,5],[49,24,3],[49,25,12],[49,26,14],[49,27,27],[49,28,32],[49,29,47],[49,30,47],[49,31,31],[49,32,26],[49,33,26],[49,34,10],[49,35,9],[49,36,2],[49,37,2],[49,39,1],[50,2,1],[50,9,1],[50,13,1],[50,15,1],[50,19,1],[50,20,1],[50,21,2],[50,22,2],[50,23,1],[50,24,3],[50,25,9],[50,26,16],[50,27,19],[50,28,28],[50,29,41],[50,30,50],[50,31,32],[50,32,31],[50,33,29],[50,34,9],[50,35,7],[50,36,2],[50,37,3],[50,39,1],[51,0,1],[51,3,1],[51,5,1],[51,9,1],[51,11,1],[51,14,1],[51,15,1],[51,16,2],[51,17,1],[51,20,1],[51,21,2],[51,22,1],[51,23,1],[51,24,4],[51,25,6],[51,26,5],[51,27,13],[51,28,25],[51,29,36],[51,30,51],[51,31,51],[51,32,35],[51,33,24],[51,34,8],[51,35,3],[51,36,5],[51,37,1],[51,38,1],[52,6,1],[52,9,1],[52,10,1],[52,12,1],[52,13,1],[52,14,1],[52,16,2],[52,17,1],[52,18,5],[52,19,3],[52,20,1],[52,22,3],[52,23,1],[52,24,5],[52,25,5],[52,26,16],[52,27,28],[52,28,32],[52,29,46],[52,30,44],[52,31,46],[52,32,30],[52,33,21],[52,34,6],[52,35,3],[52,36,5],[53,13,1],[53,14,1],[53,17,1],[53,18,2],[53,19,1],[53,20,1],[53,21,1],[53,22,1],[53,23,1],[53,24,2],[53,25,9],[53,26,15],[53,27,21],[53,28,33],[53,29,48],[53,30,49],[53,31,38],[53,32,29],[53,33,21],[53,34,4],[53,35,4],[53,36,1],[53,37,1],[54,10,1],[54,16,1],[54,17,1],[54,18,2],[54,20,1],[54,21,3],[54,22,3],[54,23,4],[54,24,2],[54,25,8],[54,26,16],[54,27,19],[54,28,26],[54,29,38],[54,30,41],[54,31,39],[54,32,25],[54,33,22],[54,34,6],[54,35,2],[54,36,2],[54,37,1],[54,40,1],[54,41,1],[55,25,1],[55,26,5],[55,27,4],[55,28,12],[55,29,13],[55,30,17],[55,31,12],[55,32,12],[55,33,16],[55,34,4],[55,35,2],[55,40,1],[56,20,1],[56,24,1],[56,25,1],[56,26,3],[56,27,7],[56,28,14],[56,29,17],[56,30,15],[56,31,14],[56,32,10],[56,33,10],[56,34,2],[57,3,1],[57,4,1],[57,16,1],[57,20,1],[57,21,1],[57,24,3],[57,25,2],[57,26,9],[57,27,3],[57,28,10],[57,29,12],[57,30,19],[57,31,15],[57,32,17],[57,33,5],[57,35,1],[57,38,1],[58,15,2],[58,18,1],[58,24,3],[58,25,2],[58,26,3],[58,27,12],[58,28,15],[58,29,17],[58,30,16],[58,31,16],[58,32,10],[58,33,14],[58,34,4],[58,35,3],[58,37,2],[58,40,1],[58,51,1],[59,3,1],[59,16,1],[59,22,3],[59,24,1],[59,25,3],[59,26,2],[59,27,8],[59,28,14],[59,29,17],[59,30,15],[59,31,23],[59,32,20],[59,33,4],[59,34,2],[60,1,1],[60,21,3],[60,22,1],[60,23,2],[60,24,2],[60,25,2],[60,26,4],[60,27,4],[60,28,16],[60,29,15],[60,30,22],[60,31,21],[60,32,12],[60,33,7],[60,34,6],[60,35,2],[60,39,1],[61,15,1],[61,23,2],[61,24,1],[61,25,4],[61,26,6],[61,27,4],[61,28,11],[61,29,16],[61,30,22],[61,31,18],[61,32,12],[61,33,9],[61,34,3],[61,35,2],[61,36,1],[61,38,1],[62,0,1],[62,2,1],[62,19,1],[62,21,1],[62,23,2],[62,24,2],[62,25,2],[62,26,2],[62,27,11],[62,28,10],[62,29,17],[62,30,16],[62,31,18],[62,32,14],[62,33,8],[62,34,4],[62,36,1],[62,38,1],[63,13,1],[63,15,1],[63,16,1],[63,20,2],[63,23,1],[63,24,3],[63,25,3],[63,26,8],[63,27,6],[63,28,16],[63,29,16],[63,30,16],[63,31,20],[63,32,12],[63,33,6],[63,34,1],[63,36,1],[64,2,1],[64,13,1],[64,15,2],[64,21,2],[64,22,2],[64,23,1],[64,24,2],[64,26,3],[64,27,4],[64,28,11],[64,29,14],[64,30,11],[64,31,14],[64,32,11],[64,33,11],[64,34,3],[64,35,1],[64,36,2],[64,37,1],[65,28,2],[65,34,1],[66,12,1],[66,28,2],[66,29,1],[66,30,2],[67,22,1],[67,30,2],[67,31,1],[68,28,2],[68,29,1],[68,31,1],[68,32,2],[68,33,1],[69,27,1],[69,30,1],[69,32,1],[69,34,1],[70,28,1],[70,30,1],[70,31,3],[71,24,1],[71,25,1],[71,28,1],[71,29,1],[71,31,2],[71,34,1],[72,13,1],[72,27,1],[72,28,3],[73,35,1],[74,18,1],[74,21,1],[74,31,1],[74,32,1],[74,34,1],[75,26,1],[75,27,1],[75,30,1],[75,31,1],[75,32,1],[75,33,1],[76,2,1],[76,27,1],[76,30,1],[76,31,1],[77,27,1],[77,28,1],[77,29,1],[77,30,1],[77,31,1],[77,32,1],[77,33,1],[77,37,1],[78,28,1],[78,31,1],[78,33,1],[78,34,1],[79,20,1],[79,29,1],[79,31,2],[79,32,1],[79,33,1],[79,34,1],[80,18,1],[80,25,1],[80,29,1],[80,31,2],[80,33,1],[81,22,1],[81,27,3],[81,29,2],[81,32,2],[82,25,1],[82,28,1],[82,31,1],[83,29,1],[83,33,2],[84,26,2],[84,29,1],[84,30,1],[84,31,1],[84,32,1],[84,33,1],[85,27,1],[85,29,1],[85,30,1],[85,31,3],[85,32,1],[86,27,1],[86,28,1],[86,29,1],[86,31,2],[86,32,1],[86,33,1],[87,24,1],[87,26,1],[87,31,1],[87,32,1],[88,26,1],[88,27,1],[88,30,1],[88,31,2],[88,32,1],[88,34,1],[89,29,2],[89,32,1],[90,29,1],[90,30,1],[91,26,1],[91,28,1],[91,29,1],[91,30,1],[91,33,1],[92,26,1],[92,30,1],[93,25,1],[93,26,2],[93,27,1],[93,30,2],[93,32,1],[94,25,1],[94,28,1],[94,29,1],[94,32,1],[95,30,1],[96,26,1],[96,28,1],[96,30,3],[96,31,3],[97,21,1],[97,23,1],[97,26,1],[97,29,1],[97,31,1],[99,31,4],[99,32,2],[99,33,1],[99,34,1],[126,44,1],[151,28,1]],"median_by_age":[[1,1225278.0,1],[3,122527.0,1],[9,94846.0,1],[18,24000.0,279],[19,27844.0,311],[20,25830.0,282],[21,29004.0,287],[22,26033.5,282],[23,23199.5,298],[24,25634.5,274],[25,62221.0,749],[26,63808.0,781],[27,63870.0,744],[28,62648.0,787],[29,62696.0,808],[30,65663.0,701],[31,63808.0,790],[32,66292.0,730],[33,66193.5,764],[34,63808.0,763],[35,92812.0,662],[36,92812.0,652],[37,95000.0,621],[38,92812.0,689],[39,95000.0,699],[40,91949.5,624],[41,95132.0,632],[42,92406.0,652],[43,93972.0,717],[44,97452.0,677],[45,100000.0,291],[46,102106.0,262],[47,99804.0,280],[48,104646.5,302],[49,100745.0,307],[50,109160.0,291],[51,116015.0,283],[52,100000.0,309],[53,102000.0,285],[54,105646.0,265],[55,117017.0,99],[56,104413.0,95],[57,110107.0,102],[58,106206.5,122],[59,114402.5,114],[60,116015.0,121],[61,110000.0,113],[62,107855.0,112],[63,99192.5,114],[64,110000.0,97],[65,75000.0,3],[66,85525.0,6],[67,111000.0,4],[68,148000.0,7],[69,141198.0,4],[70,128000.0,5],[71,93000.0,7],[72,68071.0,5],[73,350000.0,1],[74,145000.0,5],[75,127616.5,6],[76,85088.5,4],[77,125000.0,8],[78,172350.0,4],[79,150000.0,7],[80,111005.5,6],[81,72289.0,8],[82,69310.0,3],[83,250000.0,3],[84,115000.0,7],[85,130000.0,7],[86,140000.0,7],[87,93203.0,4],[88,145917.0,7],[89,81685.0,3],[90,108757.0,2],[91,98022.0,5],[92,75000.0,2],[93,52007.0,7],[94,76304.5,4],[95,116015.0,1],[96,113007.5,8],[97,43972.0,5],[99,165000.0,8],[126,2672890.0,1],[151,67289.0,1]],"n":20397,"n_missing_age":10},"q2a_before":{"Hybrid":{"count":7803.0,"mean":101790.2777,"std":347264.8384,"min":104.0,"25%":47566.0,"50%":77730.0,"75%":116015.0,"max":18387548.0,"IQR":68449.0},"Remote":{"count":6934.0,"mean":118683.7798,"std":442809.9184,"min":102.0,"25%":47650.0,"50%":90527.5,"75%":150000.0,"max":33552715.0,"IQR":102350.0}},"q2a_after":{"Hybrid":{"count":7803.0,"mean":101790.2777,"std":347264.8384,"min":104.0,"25%":47566.0,"50%":77730.0,"75%":116015.0,"max":18387548.0,"IQR":68449.0},"Remote":{"count":6933.0,"mean":113861.3319,"std":186624.002,"min":102.0,"25%":47650.0,"50%":90526.0,"75%":150000.0,"max":9000000.0,"IQR":102350.0}},"top5":[33552715,18387548,15430267,13921760,9531653],"q2b":{"n_h":7803,"n_r":6933,"mean_h":101790.2777,"mean_r":113861.3319,"var_h":120592867982.1814,"var_r":34828518139.58848,"sp":283271.5327,"df":14734,"t":2.581926,"p":0.009834615719730386,"scipy":{"t":2.5819264341500805,"p":0.009834615719730386,"df":14734.0},"welch":{"t":2.667464293819583,"p":0.00765265769084681,"df":12242.587243921967}},"q2c":{"hyb":{"counts":[1,1,6,7,16,35,55,83,113,167,208,231,296,327,380,421,426,490,484,538,521,471,490,401,453,401,392,368,316,281,255,201,206,170,143,120,106,76,65,51,59,35,26,27,28,8,10,13,6,4,5,2,1,1,2,1],"edges":[90831.4364,91328.3069,91825.1773,92322.0478,92818.9183,93315.7888,93812.6593,94309.5298,94806.4002,95303.2707,95800.1412,96297.0117,96793.8822,97290.7527,97787.6232,98284.4936,98781.3641,99278.2346,99775.1051,100271.9756,100768.8461,101265.7166,101762.587,102259.4575,102756.328,103253.1985,103750.069,104246.9395,104743.8099,105240.6804,105737.5509,106234.4214,106731.2919,107228.1624,107725.0329,108221.9033,108718.7738,109215.6443,109712.5148,110209.3853,110706.2558,111203.1262,111699.9967,112196.8672,112693.7377,113190.6082,113687.4787,114184.3492,114681.2196,115178.0901,115674.9606,116171.8311,116668.7016,117165.5721,117662.4425,118159.313,118656.1835]},"rem":{"counts":[1,1,1,2,6,5,14,14,18,41,52,59,84,131,112,212,222,277,313,347,381,433,494,479,508,505,489,499,443,430,419,374,354,349,297,262,217,188,161,148,118,101,80,75,69,56,42,27,21,15,18,11,2,11,3,5,2,2],"edges":[106443.3261,106718.0753,106992.8246,107267.5738,107542.323,107817.0722,108091.8214,108366.5707,108641.3199,108916.0691,109190.8183,109465.5675,109740.3168,110015.066,110289.8152,110564.5644,110839.3136,111114.0629,111388.8121,111663.5613,111938.3105,112213.0597,112487.809,112762.5582,113037.3074,113312.0566,113586.8059,113861.5551,114136.3043,114411.0535,114685.8027,114960.552,115235.3012,115510.0504,115784.7996,116059.5488,116334.2981,116609.0473,116883.7965,117158.5457,117433.2949,117708.0442,117982.7934,118257.5426,118532.2918,118807.041,119081.7903,119356.5395,119631.2887,119906.0379,120180.7871,120455.5364,120730.2856,121005.0348,121279.784,121554.5332,121829.2825,122104.0317,122378.7809]},"hyb_mean":101790.2777,"rem_mean":113861.3319,"diff":{"counts":[1,0,1,0,10,4,5,11,8,11,26,21,40,35,69,63,82,90,119,141,167,179,243,248,308,330,374,378,431,474,479,467,509,505,472,441,461,467,380,354,304,290,206,181,157,125,85,69,67,40,26,19,11,9,1,1,5],"edges":[-6135.9098,-5567.5504,-4999.1911,-4430.8317,-3862.4724,-3294.113,-2725.7537,-2157.3943,-1589.035,-1020.6756,-452.3163,116.0431,684.4024,1252.7618,1821.1211,2389.4805,2957.8398,3526.1992,4094.5585,4662.9179,5231.2772,5799.6366,6367.9959,6936.3553,7504.7146,8073.0739,8641.4333,9209.7926,9778.152,10346.5113,10914.8707,11483.23,12051.5894,12619.9487,13188.3081,13756.6674,14325.0268,14893.3861,15461.7455,16030.1048,16598.4642,17166.8235,17735.1829,18303.5422,18871.9016,19440.2609,20008.6203,20576.9796,21145.339,21713.6983,22282.0577,22850.417,23418.7764,23987.1357,24555.495,25123.8544,25692.2137,26260.5731]},"mean_diff":12071.0542,"std":{"counts":[1,0,1,0,10,4,5,11,8,11,26,21,40,35,69,63,82,90,119,141,167,179,243,248,308,330,374,378,431,474,479,467,509,505,472,441,461,467,380,354,304,290,206,181,157,125,85,69,67,40,26,19,11,9,1,1,5],"edges":[-1.3124,-1.1909,-1.0693,-0.9477,-0.8262,-0.7046,-0.583,-0.4615,-0.3399,-0.2183,-0.0967,0.0248,0.1464,0.268,0.3895,0.5111,0.6327,0.7542,0.8758,0.9974,1.1189,1.2405,1.3621,1.4836,1.6052,1.7268,1.8484,1.9699,2.0915,2.2131,2.3346,2.4562,2.5778,2.6993,2.8209,2.9425,3.064,3.1856,3.3072,3.4287,3.5503,3.6719,3.7934,3.915,4.0366,4.1582,4.2797,4.4013,4.5229,4.6444,4.766,4.8876,5.0091,5.1307,5.2523,5.3738,5.4954,5.617]},"std_mean":2.581864,"boot_hyb_mean":101819.1715,"boot_rem_mean":113889.9348,"share_diff_le0":0.0072},"q2d":{"t":265.2385083422967,"p":0.0,"df":19998.0},"q2e":{"formula":[2907.0537,21235.0547],"boot":[2482.1506,20531.6126],"diff":12071.0542,"se":4675.2123,"tcrit":1.960125},"q2f":{"stat":109.49021826031583,"p":1.2672835968463248e-25,"grand_median":81909.0,"table":[[3584,3784],[4219,3149]],"boot_t":820.439207083919,"boot_p":0.0,"boot_df":19998.0,"med_h":77730.0,"med_r":90526.0,"boot_med_h":{"counts":[1,0,496,192,106,192,226,156,51,1166,392,236,83,375,76,84,263,1717,939,335,450,126,712,174,821,195,58,45,62,48,11,196,0,8,1,0,0,4,3],"edges":[75000.0,75158.5385,75317.0769,75475.6154,75634.1538,75792.6923,75951.2308,76109.7692,76268.3077,76426.8462,76585.3846,76743.9231,76902.4615,77061.0,77219.5385,77378.0769,77536.6154,77695.1538,77853.6923,78012.2308,78170.7692,78329.3077,78487.8462,78646.3846,78804.9231,78963.4615,79122.0,79280.5385,79439.0769,79597.6154,79756.1538,79914.6923,80073.2308,80231.7692,80390.3077,80548.8462,80707.3846,80865.9231,81024.4615,81183.0]},"boot_med_r":{"counts":[2,1,10,0,64,3,21,0,62,11,58,0,17,246,0,0,0,78,82,52,0,266,118,0,100,442,0,2034,196,170,185,913,103,103,0,196,1249,931,403,0,0,0,56,44,59,250,0,57,0,0,304,0,1095,0,5,0,0,2,1,4,0,0,0,5,0,0,0,0,1,0,1],"edges":[87011.0,87121.3521,87231.7042,87342.0563,87452.4085,87562.7606,87673.1127,87783.4648,87893.8169,88004.169,88114.5211,88224.8732,88335.2254,88445.5775,88555.9296,88666.2817,88776.6338,88886.9859,88997.338,89107.6901,89218.0423,89328.3944,89438.7465,89549.0986,89659.4507,89769.8028,89880.1549,89990.507,90100.8592,90211.2113,90321.5634,90431.9155,90542.2676,90652.6197,90762.9718,90873.3239,90983.6761,91094.0282,91204.3803,91314.7324,91425.0845,91535.4366,91645.7887,91756.1408,91866.493,91976.8451,92087.1972,92197.5493,92307.9014,92418.2535,92528.6056,92638.9577,92749.3099,92859.662,92970.0141,93080.3662,93190.7183,93301.0704,93411.4225,93521.7746,93632.1268,93742.4789,93852.831,93963.1831,94073.5352,94183.8873,94294.2394,94404.5915,94514.9437,94625.2958,94735.6479,94846.0]}},"q3_desc":{"Bachelor's degree":{"count":2978.0,"mean":160987.6044,"std":113742.4237,"min":126.0,"25%":100000.0,"50%":140000.0,"75%":190000.0,"max":1950000.0,"IQR":90000.0},"Master's degree":{"count":1084.0,"mean":182220.4769,"std":161910.8302,"min":125.0,"25%":110750.0,"50%":157000.0,"75%":215000.0,"max":3900000.0,"IQR":104250.0},"Professional degree":{"count":301.0,"mean":197700.9601,"std":194866.3815,"min":185.0,"25%":108000.0,"50%":160000.0,"75%":217000.0,"max":2346000.0,"IQR":109000.0}},"q3_anova":{"F":17.49659380454082,"p":2.701823686259101e-08},"q3_boot":{"bac":{"counts":[2,0,3,3,1,2,10,15,15,37,49,47,82,93,118,150,170,213,210,290,343,351,433,416,454,457,477,483,493,496,474,457,417,414,367,318,288,229,218,197,142,126,98,75,65,43,39,34,19,19,15,12,4,7,3,2,2,0,2,0,1],"edges":[153632.406,153893.2663,154154.1267,154414.987,154675.8473,154936.7077,155197.568,155458.4284,155719.2887,155980.1491,156241.0094,156501.8697,156762.7301,157023.5904,157284.4508,157545.3111,157806.1714,158067.0318,158327.8921,158588.7525,158849.6128,159110.4732,159371.3335,159632.1938,159893.0542,160153.9145,160414.7749,160675.6352,160936.4956,161197.3559,161458.2162,161719.0766,161979.9369,162240.7973,162501.6576,162762.5179,163023.3783,163284.2386,163545.099,163805.9593,164066.8197,164327.68,164588.5403,164849.4007,165110.261,165371.1214,165631.9817,165892.842,166153.7024,166414.5627,166675.4231,166936.2834,167197.1438,167458.0041,167718.8644,167979.7248,168240.5851,168501.4455,168762.3058,169023.1662,169284.0265,169544.8868]},"mas":{"counts":[1,1,6,7,10,15,22,37,53,89,90,121,167,209,260,303,329,384,429,429,454,507,524,475,509,472,455,451,421,332,325,306,246,258,238,183,148,141,124,99,72,55,52,42,29,30,18,16,14,14,7,4,6,6,1,0,4],"edges":[167178.9954,167786.6669,168394.3385,169002.01,169609.6815,170217.3531,170825.0246,171432.6962,172040.3677,172648.0392,173255.7108,173863.3823,174471.0538,175078.7254,175686.3969,176294.0685,176901.74,177509.4115,178117.0831,178724.7546,179332.4262,179940.0977,180547.7692,181155.4408,181763.1123,182370.7838,182978.4554,183586.1269,184193.7985,184801.47,185409.1415,186016.8131,186624.4846,187232.1561,187839.8277,188447.4992,189055.1708,189662.8423,190270.5138,190878.1854,191485.8569,192093.5285,192701.2,193308.8715,193916.5431,194524.2146,195131.8861,195739.5577,196347.2292,196954.9008,197562.5723,198170.2438,198777.9154,199385.5869,199993.2584,200600.93,201208.6015,201816.2731]},"pro":{"counts":[2,2,4,8,10,16,22,37,53,85,101,129,167,212,227,288,319,355,383,426,473,526,475,491,468,476,469,452,420,400,336,319,288,256,215,179,164,151,115,82,80,73,58,35,39,26,26,12,8,16,2,4,1,4,6,1,2,3,3],"edges":[163439.0864,164819.478,166199.8695,167580.2611,168960.6527,170341.0443,171721.4358,173101.8274,174482.219,175862.6106,177243.0021,178623.3937,180003.7853,181384.1769,182764.5684,184144.96,185525.3516,186905.7432,188286.1347,189666.5263,191046.9179,192427.3095,193807.7011,195188.0926,196568.4842,197948.8758,199329.2674,200709.6589,202090.0505,203470.4421,204850.8337,206231.2252,207611.6168,208992.0084,210372.4,211752.7915,213133.1831,214513.5747,215893.9663,217274.3578,218654.7494,220035.141,221415.5326,222795.9242,224176.3157,225556.7073,226937.0989,228317.4905,229697.882,231078.2736,232458.6652,233839.0568,235219.4483,236599.8399,237980.2315,239360.6231,240741.0146,242121.4062,243501.7978,244882.1894]},"bac_mean":160992.9207,"mas_mean":182162.5444,"pro_mean":197720.4583},"q3_diff":{"pm":{"counts":[1,0,1,1,1,0,6,2,8,12,18,24,32,39,61,86,95,123,169,193,236,259,329,373,358,465,458,489,475,480,473,473,477,456,409,388,319,332,287,273,221,186,157,146,129,89,87,87,56,33,29,19,17,15,9,9,6,6,4,3,5,2,2,1,0,1],"edges":[-30660.0535,-29158.4418,-27656.8302,-26155.2186,-24653.607,-23151.9954,-21650.3838,-20148.7722,-18647.1606,-17145.549,-15643.9374,-14142.3258,-12640.7141,-11139.1025,-9637.4909,-8135.8793,-6634.2677,-5132.6561,-3631.0445,-2129.4329,-627.8213,873.7903,2375.402,3877.0136,5378.6252,6880.2368,8381.8484,9883.46,11385.0716,12886.6832,14388.2948,15889.9064,17391.518,18893.1297,20394.7413,21896.3529,23397.9645,24899.5761,26401.1877,27902.7993,29404.4109,30906.0225,32407.6341,33909.2458,35410.8574,36912.469,38414.0806,39915.6922,41417.3038,42918.9154,44420.527,45922.1386,47423.7502,48925.3618,50426.9735,51928.5851,53430.1967,54931.8083,56433.4199,57935.0315,59436.6431,60938.2547,62439.8663,63941.4779,65443.0896,66944.7012,68446.3128]},"pb":{"counts":[5,4,3,9,12,32,27,49,71,103,105,160,183,255,303,287,341,366,434,444,478,489,543,486,491,448,475,421,389,365,317,279,272,209,216,158,138,133,107,81,66,62,46,24,31,14,16,16,8,6,4,3,3,3,2,1,4,1,2],"edges":[2704.4315,4119.1883,5533.9451,6948.7019,8363.4588,9778.2156,11192.9724,12607.7292,14022.486,15437.2428,16851.9997,18266.7565,19681.5133,21096.2701,22511.0269,23925.7837,25340.5405,26755.2974,28170.0542,29584.811,30999.5678,32414.3246,33829.0814,35243.8382,36658.5951,38073.3519,39488.1087,40902.8655,42317.6223,43732.3791,45147.1359,46561.8928,47976.6496,49391.4064,50806.1632,52220.92,53635.6768,55050.4337,56465.1905,57879.9473,59294.7041,60709.4609,62124.2177,63538.9745,64953.7314,66368.4882,67783.245,69198.0018,70612.7586,72027.5154,73442.2722,74857.0291,76271.7859,77686.5427,79101.2995,80516.0563,81930.8131,83345.5699,84760.3268,86175.0836]},"mb":{"counts":[2,0,2,5,1,7,13,23,27,29,60,76,98,118,156,184,252,297,302,350,386,408,459,436,518,487,505,504,488,439,430,383,304,342,283,269,220,192,190,155,125,91,69,77,51,46,28,26,14,12,8,20,11,9,3,4,1,1,2,2],"edges":[3364.7989,4025.3751,4685.9513,5346.5276,6007.1038,6667.68,7328.2562,7988.8324,8649.4086,9309.9848,9970.561,10631.1372,11291.7134,11952.2896,12612.8658,13273.4421,13934.0183,14594.5945,15255.1707,15915.7469,16576.3231,17236.8993,17897.4755,18558.0517,19218.6279,19879.2041,20539.7804,21200.3566,21860.9328,22521.509,23182.0852,23842.6614,24503.2376,25163.8138,25824.39,26484.9662,27145.5424,27806.1187,28466.6949,29127.2711,29787.8473,30448.4235,31108.9997,31769.5759,32430.1521,33090.7283,33751.3045,34411.8807,35072.4569,35733.0332,36393.6094,37054.1856,37714.7618,38375.338,39035.9142,39696.4904,40357.0666,41017.6428,41678.219,42338.7952,42999.3715]},"pm_mean":15557.9139,"pb_mean":36727.5376,"mb_mean":21169.6236,"pm_ci":[-7153.74,40827.55],"pb_ci":[15993.11,60614.02],"mb_ci":[11321.82,32301.57]},"q3_std":{"pm":{"counts":[1,0,1,1,1,0,6,2,8,12,18,24,32,39,61,86,95,123,169,193,236,259,329,373,358,465,458,489,475,480,473,473,477,456,409,388,319,332,287,273,221,186,157,146,129,89,87,87,56,33,29,19,17,15,9,9,6,6,4,3,5,2,2,1,0,1],"edges":[-2.7747,-2.6388,-2.5029,-2.367,-2.2311,-2.0952,-1.9593,-1.8234,-1.6875,-1.5516,-1.4157,-1.2798,-1.144,-1.0081,-0.8722,-0.7363,-0.6004,-0.4645,-0.3286,-0.1927,-0.0568,0.0791,0.215,0.3509,0.4868,0.6226,0.7585,0.8944,1.0303,1.1662,1.3021,1.438,1.5739,1.7098,1.8457,1.9816,2.1175,2.2533,2.3892,2.5251,2.661,2.7969,2.9328,3.0687,3.2046,3.3405,3.4764,3.6123,3.7482,3.8841,4.0199,4.1558,4.2917,4.4276,4.5635,4.6994,4.8353,4.9712,5.1071,5.243,5.3789,5.5148,5.6506,5.7865,5.9224,6.0583,6.1942]},"pb":{"counts":[5,4,3,9,12,32,27,49,71,103,105,160,183,255,303,287,341,366,434,444,478,489,543,486,491,448,475,421,389,365,317,279,272,209,216,158,138,133,107,81,66,62,46,24,31,14,16,16,8,6,4,3,3,3,2,1,4,1,2],"edges":[0.3623,0.5519,0.7414,0.931,1.1205,1.3101,1.4996,1.6892,1.8787,2.0683,2.2578,2.4474,2.6369,2.8264,3.016,3.2055,3.3951,3.5846,3.7742,3.9637,4.1533,4.3428,4.5324,4.7219,4.9115,5.101,5.2906,5.4801,5.6697,5.8592,6.0487,6.2383,6.4278,6.6174,6.8069,6.9965,7.186,7.3756,7.5651,7.7547,7.9442,8.1338,8.3233,8.5129,8.7024,8.892,9.0815,9.271,9.4606,9.6501,9.8397,10.0292,10.2188,10.4083,10.5979,10.7874,10.977,11.1665,11.3561,11.5456]},"mb":{"counts":[2,0,2,5,1,7,13,23,27,29,60,76,98,118,156,184,252,297,302,350,386,408,459,436,518,487,505,504,488,439,430,383,304,342,283,269,220,192,190,155,125,91,69,77,51,46,28,26,14,12,8,20,11,9,3,4,1,1,2,2],"edges":[0.7389,0.884,1.0291,1.1741,1.3192,1.4642,1.6093,1.7544,1.8994,2.0445,2.1896,2.3346,2.4797,2.6248,2.7698,2.9149,3.06,3.205,3.3501,3.4952,3.6402,3.7853,3.9303,4.0754,4.2205,4.3655,4.5106,4.6557,4.8007,4.9458,5.0909,5.2359,5.381,5.5261,5.6711,5.8162,5.9613,6.1063,6.2514,6.3965,6.5415,6.6866,6.8316,6.9767,7.1218,7.2668,7.4119,7.557,7.702,7.8471,7.9922,8.1372,8.2823,8.4274,8.5724,8.7175,8.8626,9.0076,9.1527,9.2977,9.4428]},"pm_mean":1.407951,"pb_mean":4.920702,"mb_mean":4.648925},"q3_boot_anova":{"F":66010.10234082467,"p":0.0},"x_mode":[{"mode":"Hybrid","n":7803,"mean":101790.28,"median":77730.0,"sat":7.1112,"sat_n":6414},{"mode":"In-person","n":2993,"mean":72373.37,"median":48726.0,"sat":6.9117,"sat_n":2219},{"mode":"Remote","n":6933,"mean":113861.33,"median":90526.0,"sat":7.3072,"sat_n":6130},{"mode":"Your choice (very flexible)","n":2677,"mean":93409.86,"median":77601.0,"sat":7.3906,"sat_n":2194}],"x_pct":{"p":[10,25,50,75,90],"hyb":[19761.0,47566.0,77730.0,116015.0,171230.8],"rem":[13846.0,47650.0,90526.0,150000.0,209560.6]},"x_country":[{"country":"United States of America","hyb_med":144000.0,"rem_med":165000.0,"hyb_n":1400,"rem_n":2189},{"country":"Germany","hyb_med":81210.0,"rem_med":92812.0,"hyb_n":912,"rem_n":429},{"country":"Great Britain","hyb_med":95299.0,"rem_med":102106.0,"hyb_n":573,"rem_n":428},{"country":"Canada","hyb_med":87550.0,"rem_med":100464.0,"hyb_n":233,"rem_n":365},{"country":"India","hyb_med":25573.0,"rem_med":22667.0,"hyb_n":364,"rem_n":256},{"country":"France","hyb_med":60328.0,"rem_med":74249.0,"hyb_n":463,"rem_n":165}],"x_na_mode":[{"mode":"Hybrid","n":1633,"median":134000.0},{"mode":"In-person","n":745,"median":105624.0},{"mode":"Remote","n":2554,"median":155000.0},{"mode":"Your choice (very flexible)","n":536,"median":130000.0}]};
+const FB = "'Source Sans 3', 'Segoe UI', system-ui, -apple-system, sans-serif", FM = "'JetBrains Mono', ui-monospace, Menlo, Consolas, monospace";
+const $ = id => document.getElementById(id);
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const usd = (v, dp = 0) => (v < 0 ? "−$" : "$") + Math.abs(v).toLocaleString("en-US", {minimumFractionDigits: dp, maximumFractionDigits: dp});
+const k$ = v => (v < 0 ? "−$" : "$") + (Math.abs(v) >= 1e6 ? (Math.abs(v)/1e6).toLocaleString("en-US",{maximumFractionDigits:1}) + "M" : Math.round(Math.abs(v)/1000).toLocaleString("en-US") + "k");
+const alpha = (hex, a) => { const c = hex.replace("#",""); const n = parseInt(c.length===3? c.split("").map(x=>x+x).join(""):c,16); return `rgba(${n>>16&255},${n>>8&255},${n&255},${a})`; };
+const mix = (h1, h2, t) => { const p = h => { const n=parseInt(h.replace("#",""),16); return [n>>16&255,n>>8&255,n&255]; }; const a=p(h1), b=p(h2); return `rgb(${a.map((x,i)=>Math.round(x+(b[i]-x)*t)).join(",")})`; };
+
+// ---------- static tables ----------
+$("top5").textContent = D.top5.map(v => usd(v)).join(", ");
+function descTable(el, obj, cols) {
+  const rows = [["count","Count",0],["mean","Mean",2],["std","Std. deviation",2],["min","Min",2],["25%","25th percentile",2],["50%","Median (50%)",2],["75%","75th percentile",2],["max","Max",2],["IQR","IQR (75% − 25%)",2]];
+  el.innerHTML = `<thead><tr><th>Statistic (USD)</th>${cols.map(c=>`<th>${c}</th>`).join("")}</tr></thead><tbody>` +
+    rows.map(([k,l,dp]) => `<tr${k==="mean"||k==="50%"?' class="hl"':''}><td>${l}</td>${cols.map(c=>`<td>${obj[c][k].toLocaleString("en-US",{minimumFractionDigits:dp,maximumFractionDigits:dp})}</td>`).join("")}</tr>`).join("") + "</tbody>";
+}
+let q2aState = "after";
+const drawQ2a = () => { descTable($("t-q2a"), q2aState==="after"?D.q2a_after:D.q2a_before, ["Hybrid","Remote"]); $("q2a-after").setAttribute("aria-pressed", q2aState==="after"); $("q2a-before").setAttribute("aria-pressed", q2aState==="before"); };
+$("q2a-after").onclick = () => { q2aState="after"; drawQ2a(); };
+$("q2a-before").onclick = () => { q2aState="before"; drawQ2a(); };
+drawQ2a();
+descTable($("t-q3a"), D.q3_desc, ["Bachelor's degree","Master's degree","Professional degree"]);
+
+// ---------- chart helpers ----------
+const charts = {};
+function legend(id, items) {
+  $(id).innerHTML = items.map(([c,l,dash]) => dash ? `<span><i class="sw dash" style="border-color:${c}"></i>${l}</span>` : `<span><i class="sw" style="background:${c}"></i>${l}</span>`).join("");
+}
+function histPts(h) {
+  const pts = [{x:h.edges[0], y:0}];
+  h.counts.forEach((c,i) => { const lo=h.edges[i], hi=h.edges[i+1]; pts.push({x:lo,y:c,lo,hi,c},{x:hi,y:c,lo,hi,c}); });
+  pts.push({x:h.edges[h.edges.length-1], y:0});
+  return pts;
+}
+const vlinePlugin = {
+  id: "vlines",
+  afterDatasetsDraw(chart, args, opts) {
+    const L = opts.lines || []; if (!L.length) return;
+    const {ctx, chartArea:a, scales:{x}} = chart;
+    ctx.save();
+    L.forEach(l => {
+      if (l.hidden) return;
+      const px = x.getPixelForValue(l.x); if (px < a.left || px > a.right) return;
+      ctx.strokeStyle = l.color; ctx.lineWidth = l.w || 2; ctx.setLineDash(l.solid ? [] : [6,4]);
+      ctx.beginPath(); ctx.moveTo(px, a.top); ctx.lineTo(px, a.bottom); ctx.stroke();
+    });
+    ctx.restore();
+  }
+};
+Chart.register(vlinePlugin);
+function baseOpts(xfmt, xTitle, yTitle) {
+  const ink2 = css("--ink-2"), grid = css("--line");
+  return {
+    responsive:true, maintainAspectRatio:false, animation:false,
+    interaction:{mode:"nearest", intersect:false, axis:"x"},
+    plugins:{legend:{display:false}, tooltip:{backgroundColor:css("--panel"), titleColor:css("--ink"), bodyColor:css("--ink-2"), borderColor:grid, borderWidth:1, padding:10, titleFont:{family:FB, weight:"700"}, bodyFont:{family:FM, size:11}}},
+    scales:{
+      x:{type:"linear", grid:{color:alpha(grid.startsWith("#")?grid:"#888888",.6), drawTicks:false}, border:{color:grid}, ticks:{color:ink2, callback:xfmt, maxRotation:0, autoSkipPadding:14, font:{family:FM, size:10.5}}, title:{display:!!xTitle, text:xTitle, color:ink2, font:{family:FB, size:12, weight:"600"}}},
+      y:{beginAtZero:true, grace:"6%", grid:{color:alpha(grid.startsWith("#")?grid:"#888888",.6), drawTicks:false}, border:{display:false}, ticks:{color:ink2, font:{family:FM, size:10.5}, padding:6}, title:{display:!!yTitle, text:yTitle, color:ink2, font:{family:FB, size:12, weight:"600"}}}
+    }
+  };
+}
+function histChart(id, series, lines, xfmt, xTitle, tipFmt) {
+  const o = baseOpts(xfmt, xTitle, "Frequency");
+  o.plugins.vlines = {lines};
+  o.plugins.tooltip.filter = it => it.raw && it.raw.c !== undefined;
+  o.plugins.tooltip.callbacks = {
+    title: items => items.length ? `${tipFmt(items[0].raw.lo)} to ${tipFmt(items[0].raw.hi)}` : "",
+    label: it => ` ${it.dataset.label}: ${it.raw.c.toLocaleString()} resamples`
+  };
+  const ds = series.map(s => ({label:s.label, data:histPts(s.h), borderColor:s.color, backgroundColor:alpha(s.color, s.dim ? .06 : .32), borderWidth:s.dim?1:1.5, fill:"origin", pointRadius:0, pointHoverRadius:0, tension:0}));
+  return new Chart($(id), {type:"line", data:{datasets:ds}, options:o});
+}
+function intervalChart(id, rows, tickFmt) {
+  // rows: [{label, lo, hi, pt, color}]
+  const o = baseOpts(tickFmt, "Difference in mean annual salary (USD)", "");
+  o.indexAxis = "y"; o.interaction = {mode:"nearest", intersect:true};
+  o.scales.y = {type:"category", labels:rows.map(r=>r.label), grid:{display:false}, border:{display:false}, ticks:{color:css("--ink"), font:{family:FB, size:12.5, weight:"600"}}};
+  o.scales.x.beginAtZero = false;
+  const lo = Math.min(0, ...rows.map(r=>r.lo)), hi = Math.max(...rows.map(r=>r.hi));
+  o.scales.x.suggestedMin = lo; o.scales.x.suggestedMax = hi; o.scales.x.grace = "4%";
+  o.plugins.vlines = {lines:[{x:0, color:css("--zero"), solid:true, w:1.5}]};
+  o.plugins.tooltip.callbacks = {label: it => { const r = rows[it.dataIndex]; return ` 95% interval: ${usd(r.lo,2)} to ${usd(r.hi,2)}` + (r.pt!==undefined?`  ·  point estimate ${usd(r.pt,2)}`:""); }};
+  return new Chart($(id), {type:"bar", data:{labels:rows.map(r=>r.label), datasets:[{data:rows.map(r=>[r.lo,r.hi]), backgroundColor:rows.map(r=>alpha(r.color,.35)), borderColor:rows.map(r=>r.color), borderWidth:2, borderSkipped:false, borderRadius:4, barThickness:18}]}, options:o});
+}
+
+let q1bStat = "mean", xmStat = "median", q3Pair = "all";
+function build() {
+  Object.values(charts).forEach(c => c.destroy());
+  const S1 = css("--s1"), S2 = css("--s2"), S3 = css("--s3"), ink = css("--ink"), ink2 = css("--ink-2"), ink3 = css("--ink-3"), accent = css("--accent");
+  Chart.defaults.color = ink2; Chart.defaults.font.family = FB;
+
+  // Q1a satisfaction
+  {
+    const shade = $("q1a-small").checked;
+    const rows = D.q1_sat;
+    const o = baseOpts(v=>v, "Average job satisfaction (0–10)", "");
+    o.indexAxis = "y"; o.interaction = {mode:"nearest", intersect:true, axis:"y"};
+    o.scales.x.min = 0; o.scales.x.max = 10;
+    o.scales.y = {type:"category", grid:{display:false}, border:{color:css("--line")}, ticks:{color:ink2, autoSkip:false, font:{family:FB, size:11.5}}};
+    o.plugins.tooltip.callbacks = {label: it => ` Avg satisfaction ${rows[it.dataIndex].v.toFixed(2)}  ·  ${rows[it.dataIndex].n} responses`};
+    charts.q1a = new Chart($("c-q1a"), {type:"bar", data:{labels:rows.map(r=>r.job), datasets:[{data:rows.map(r=>r.v), backgroundColor:rows.map(r=>shade && r.n<30 ? alpha(S1,.35) : S1), borderRadius:3, barPercentage:.78, categoryPercentage:.9}]}, options:o});
+    legend("lg-q1a", shade ? [[S1,"30+ responses"],[alpha(S1,.35),"Fewer than 30 responses (less reliable)"]] : [[S1,"Average satisfaction"]]);
+  }
+  // Q1b salary
+  {
+    const rows = [...D.q1_sal]; if (q1bStat==="median") rows.sort((a,b)=>b.median-a.median);
+    const vals = rows.map(r => q1bStat==="mean" ? r.v : r.median);
+    const o = baseOpts(v=>k$(v), (q1bStat==="mean"?"Mean":"Median")+" salary (USD)", "");
+    o.indexAxis = "y"; o.interaction = {mode:"nearest", intersect:true, axis:"y"};
+    o.scales.y = {type:"category", grid:{display:false}, border:{color:css("--line")}, ticks:{color:ink2, autoSkip:false, font:{family:FB, size:11.5}}};
+    o.plugins.tooltip.callbacks = {label: it => { const r = rows[it.dataIndex]; return [` Mean ${usd(r.v,2)}`, ` Median ${usd(r.median,2)}`, ` ${r.n} respondents`]; }};
+    charts.q1b = new Chart($("c-q1b"), {type:"bar", data:{labels:rows.map(r=>r.job), datasets:[{data:vals, backgroundColor:q1bStat==="mean"?S1:alpha(S1,.75), borderRadius:3, barPercentage:.78, categoryPercentage:.9}]}, options:o});
+  }
+  // Q1c age vs salary density
+  {
+    const A = D.q1_age, ye = A.yedges, maxC = Math.max(...A.cells.map(c=>c[2]));
+    const lo = css("--seq-lo"), hi = css("--seq-hi");
+    const cellPlugin = {id:"cells", beforeDatasetsDraw(chart){ const {ctx, scales:{x,y}, chartArea:a} = chart; ctx.save(); ctx.beginPath(); ctx.rect(a.left,a.top,a.width,a.height); ctx.clip();
+      A.cells.forEach(([age,yb,c]) => { const x0=x.getPixelForValue(age-.5), x1=x.getPixelForValue(age+.5), y0=y.getPixelForValue(10**ye[yb+1]), y1=y.getPixelForValue(10**ye[yb]); const t = Math.log(1+c)/Math.log(1+maxC); ctx.fillStyle = mix(lo,hi,.12+.88*t); ctx.fillRect(x0,y0,Math.max(1,x1-x0),Math.max(1,y1-y0)); });
+      ctx.restore(); }};
+    const o = baseOpts(v=>v, "Age (years)", "Annual salary (USD, log scale)");
+    o.scales.x.min = 0; o.scales.x.max = 155;
+    o.scales.y = {type:"logarithmic", min:100, max:4e7, grid:{color:alpha("#8899a3",.18)}, border:{display:false}, ticks:{color:ink2, font:{family:FM, size:10.5}, callback:v=>[100,1e3,1e4,1e5,1e6,1e7].includes(v)?k$(v).replace("$0k","$100"):""}, title:{display:true, text:"Annual salary (USD, log scale)", color:ink2, font:{family:FB, size:12, weight:"600"}}};
+    o.interaction = {mode:"nearest", intersect:false};
+    o.plugins.tooltip.callbacks = {title: it => it.length ? `Age ${it[0].raw.age}` : "", label: it => it.raw.c !== undefined ? ` ${it.raw.c} respondents earning ${usd(10**ye[it.raw.yb])}–${usd(10**ye[it.raw.yb+1])}` : ` Median salary ${usd(it.raw.y)} (${it.raw.n} respondents)`};
+    const cellPts = A.cells.map(([age,yb,c]) => ({x:age, y:10**((ye[yb]+ye[yb+1])/2), age, yb, c}));
+    const ds = [{type:"scatter", data:cellPts, pointRadius:0, pointHoverRadius:4, pointHoverBackgroundColor:ink, hitRadius:5}];
+    if ($("q1c-med").checked) ds.push({type:"line", data:A.median_by_age.filter(m=>m[2]>=20).map(m=>({x:m[0], y:m[1], n:m[2], age:m[0]})), borderColor:css("--s2"), borderWidth:2, pointRadius:0, pointHoverRadius:4, tension:0});
+    charts.q1c = new Chart($("c-q1c"), {type:"scatter", data:{datasets:ds}, options:o, plugins:[cellPlugin]});
+    const items = [[mix(lo,hi,.2),"Few respondents"],[mix(lo,hi,1),"Many respondents"]];
+    if ($("q1c-med").checked) items.push([css("--s2"),"Median salary by age (ages with 20+ respondents)"]);
+    legend("lg-q1c", items);
+  }
+  // Q2c
+  const q = D.q2c, tipK = v => usd(v);
+  charts.q2c1 = histChart("c-q2c1", [{label:"Hybrid", h:q.hyb, color:S1},{label:"Remote", h:q.rem, color:S2}], [{x:q.hyb_mean,color:S1},{x:q.rem_mean,color:S2}], v=>k$(v), "Bootstrapped mean annual salary (USD)", tipK);
+  legend("lg-q2c1", [[S1,"Hybrid"],[S2,"Remote"],[S1,`Hybrid mean ${usd(q.hyb_mean,2)}`,1],[S2,`Remote mean ${usd(q.rem_mean,2)}`,1]]);
+  charts.q2c2 = histChart("c-q2c2", [{label:"Remote − hybrid", h:q.diff, color:S1}], [{x:q.mean_diff,color:S1},{x:0,color:css("--zero"),solid:true,w:1.5}], v=>k$(v), "Bootstrapped difference of mean annual salary", tipK);
+  legend("lg-q2c2", [[S1,"Bootstrapped difference"],[S1,`Mean difference = USD${Math.round(q.mean_diff)}`,1],[css("--zero"),"$0 (no difference)"]]);
+  charts.q2c3 = histChart("c-q2c3", [{label:"Standardized difference", h:q.std, color:S1}], [{x:q.std_mean,color:S1},{x:0,color:css("--zero"),solid:true,w:1.5}], v=>v.toFixed(1), "Standardized difference in mean salary", v=>v.toFixed(3));
+  legend("lg-q2c3", [[S1,"Standardized difference"],[S1,`Mean = ${q.std_mean.toFixed(3)}`,1]]);
+  // Q2e
+  charts.q2e = intervalChart("c-q2e", [{label:"Formula-based", lo:D.q2e.formula[0], hi:D.q2e.formula[1], pt:D.q2e.diff, color:S1},{label:"Bootstrap", lo:D.q2e.boot[0], hi:D.q2e.boot[1], color:S2}], v=>k$(v));
+  // Q2f contingency
+  {
+    const t = D.q2f.table; const tot = [t[0][0]+t[1][0], t[0][1]+t[1][1]];
+    const o = baseOpts(v=>v+"%", "Share of group (%)", "");
+    o.indexAxis = "y"; o.interaction = {mode:"nearest", intersect:true, axis:"y"};
+    o.scales.x.min = 0; o.scales.x.max = 100; o.scales.x.stacked = true;
+    o.scales.y = {type:"category", stacked:true, grid:{display:false}, border:{display:false}, ticks:{color:ink, font:{family:FB, size:12.5, weight:"600"}}};
+    o.plugins.vlines = {lines:[{x:50, color:css("--zero"), w:1}]};
+    o.plugins.tooltip.callbacks = {label: it => ` ${it.dataset.label}: ${it.raw.toFixed(1)}% (${(it.datasetIndex===0?t[0]:t[1])[it.dataIndex].toLocaleString()} people)`};
+    charts.q2f1 = new Chart($("c-q2f1"), {type:"bar", data:{labels:["Hybrid","Remote"], datasets:[
+      {label:"Above $81,909", data:[t[0][0]/tot[0]*100, t[0][1]/tot[1]*100], backgroundColor:accent, borderColor:css("--panel"), borderWidth:{right:2}, borderSkipped:false, barThickness:30},
+      {label:"At or below $81,909", data:[t[1][0]/tot[0]*100, t[1][1]/tot[1]*100], backgroundColor:alpha(accent,.25), barThickness:30}]}, options:o});
+    legend("lg-q2f1", [[accent,`Above overall median: hybrid ${(t[0][0]/tot[0]*100).toFixed(1)}%, remote ${(t[0][1]/tot[1]*100).toFixed(1)}%`],[alpha(accent,.25),"At or below overall median"]]);
+  }
+  charts.q2f2 = histChart("c-q2f2", [{label:"Hybrid", h:D.q2f.boot_med_h, color:S1},{label:"Remote", h:D.q2f.boot_med_r, color:S2}], [{x:D.q2f.med_h,color:S1},{x:D.q2f.med_r,color:S2}], v=>k$(v), "Bootstrapped median salary (USD)", tipK);
+  legend("lg-q2f2", [[S1,`Hybrid (sample median ${usd(D.q2f.med_h)})`],[S2,`Remote (sample median ${usd(D.q2f.med_r)})`]]);
+  // Q3c
+  const b = D.q3_boot;
+  charts.q3c1 = histChart("c-q3c1", [{label:"Bachelor", h:b.bac, color:S1},{label:"Master", h:b.mas, color:S2},{label:"Professional", h:b.pro, color:S3}], [{x:b.bac_mean,color:S1},{x:b.mas_mean,color:S2},{x:b.pro_mean,color:S3}], v=>k$(v), "Bootstrapped mean annual salary (USD)", tipK);
+  legend("lg-q3c1", [[S1,"Bachelor"],[S2,"Master"],[S3,"Professional"],[S1,`Bachelors mean ${usd(b.bac_mean,2)}`,1],[S2,`Masters mean ${usd(b.mas_mean,2)}`,1],[S3,`Professional mean ${usd(b.pro_mean,2)}`,1]]);
+  const P = [["pm","Professional − Master","(P - M)",S1],["pb","Professional − Bachelor","(P - B)",S2],["mb","Master − Bachelor","(M - B)",S3]];
+  const dim = k => q3Pair!=="all" && q3Pair!==k;
+  const d = D.q3_diff, s = D.q3_std;
+  charts.q3c2 = histChart("c-q3c2", P.map(([k,l,,c])=>({label:l, h:d[k], color:c, dim:dim(k)})), [...P.map(([k,,,c])=>({x:d[k+"_mean"], color:c, hidden:dim(k)})), {x:0,color:css("--zero"),solid:true,w:1.5}], v=>k$(v), "Bootstrapped difference of mean annual salary", tipK);
+  legend("lg-q3c2", P.map(([k,l,a,c])=>[c,`${a}: USD${Math.round(d[k+"_mean"])}`,1]));
+  charts.q3c3 = histChart("c-q3c3", P.map(([k,l,,c])=>({label:l, h:s[k], color:c, dim:dim(k)})), [...P.map(([k,,,c])=>({x:s[k+"_mean"], color:c, hidden:dim(k)})), {x:0,color:css("--zero"),solid:true,w:1.5}], v=>v.toFixed(0), "Standardized difference in mean salary", v=>v.toFixed(3));
+  legend("lg-q3c3", P.map(([k,l,a,c])=>[c,`${a}: ${s[k+"_mean"].toFixed(3)}`,1]));
+  charts.q3ci = intervalChart("c-q3ci", P.map(([k,l,,c])=>({label:l, lo:d[k+"_ci"][0], hi:d[k+"_ci"][1], pt:d[k+"_mean"], color:c})), v=>k$(v));
+  // Extra: modes
+  {
+    const order = ["Remote","Hybrid","Your choice (very flexible)","In-person"];
+    const rows = order.map(m => D.x_mode.find(r=>r.mode===m));
+    const mk = (id, vals, fmt, title, tip, max) => { const o = baseOpts(fmt, title, ""); o.indexAxis="y"; o.interaction={mode:"nearest",intersect:true,axis:"y"}; if(max!==undefined){o.scales.x.min=0;o.scales.x.max=max;}
+      o.scales.y={type:"category", grid:{display:false}, border:{color:css("--line")}, ticks:{color:ink, font:{family:FB, size:12.5, weight:"600"}}};
+      o.plugins.tooltip.callbacks={label:tip};
+      return new Chart($(id), {type:"bar", data:{labels:rows.map(r=>r.mode==="Your choice (very flexible)"?"Your choice (flexible)":r.mode), datasets:[{data:vals, backgroundColor:rows.map(r=>r.mode==="Remote"?S2:r.mode==="Hybrid"?S1:alpha(ink3,.55)), borderRadius:3, barThickness:26}]}, options:o}); };
+    charts.xmode = mk("c-xmode", rows.map(r=>xmStat==="median"?r.median:r.mean), v=>k$(v), (xmStat==="median"?"Median":"Mean")+" annual salary (USD)", it=>{const r=rows[it.dataIndex]; return [` Median ${usd(r.median,2)}`,` Mean ${usd(r.mean,2)}`,` ${r.n.toLocaleString()} respondents`];});
+    charts.xsat = mk("c-xsat", rows.map(r=>r.sat), v=>v, "Average job satisfaction (0–10)", it=>{const r=rows[it.dataIndex]; return ` ${r.sat.toFixed(2)} average · ${r.sat_n.toLocaleString()} responses`;}, 10);
+  }
+  // Extra: percentiles
+  {
+    const p = D.x_pct; const o = baseOpts(null, "", "Annual salary (USD)");
+    o.scales.x = {type:"category", grid:{display:false}, border:{color:css("--line")}, ticks:{color:ink2, font:{family:FB, size:12}}};
+    o.scales.y.ticks.callback = v=>k$(v); o.interaction={mode:"index",intersect:false};
+    o.plugins.tooltip.callbacks = {label: it => ` ${it.dataset.label}: ${usd(it.raw,2)}`, afterBody: it => { const i=it[0].dataIndex; const g=p.rem[i]-p.hyb[i]; return `Remote − hybrid: ${usd(g,2)}`; }};
+    charts.xpct = new Chart($("c-xpct"), {type:"bar", data:{labels:p.p.map(x=>x===50?"50th (median)":x+"th"), datasets:[{label:"Hybrid", data:p.hyb, backgroundColor:S1, borderRadius:{topLeft:4,topRight:4}, borderSkipped:"bottom"},{label:"Remote", data:p.rem, backgroundColor:S2, borderRadius:{topLeft:4,topRight:4}, borderSkipped:"bottom"}]}, options:{...o, datasets:{bar:{categoryPercentage:.7, barPercentage:.9}}}});
+    legend("lg-xpct", [[S1,"Hybrid"],[S2,"Remote"]]);
+  }
+  // Extra: countries
+  {
+    const c = D.x_country; const o = baseOpts(null, "", "Median annual salary (USD)");
+    o.scales.x = {type:"category", grid:{display:false}, border:{color:css("--line")}, ticks:{color:ink2, font:{family:FB, size:12}}};
+    o.scales.y.ticks.callback = v=>k$(v); o.interaction={mode:"index",intersect:false};
+    o.plugins.tooltip.callbacks = {label: it => { const r=c[it.dataIndex]; return it.datasetIndex===0?` Hybrid: ${usd(r.hyb_med)} (n=${r.hyb_n.toLocaleString()})`:` Remote: ${usd(r.rem_med)} (n=${r.rem_n.toLocaleString()})`; }};
+    charts.xcty = new Chart($("c-xcty"), {type:"bar", data:{labels:c.map(r=>r.country==="United States of America"?"United States":r.country), datasets:[{label:"Hybrid", data:c.map(r=>r.hyb_med), backgroundColor:S1, borderRadius:{topLeft:4,topRight:4}, borderSkipped:"bottom"},{label:"Remote", data:c.map(r=>r.rem_med), backgroundColor:S2, borderRadius:{topLeft:4,topRight:4}, borderSkipped:"bottom"}]}, options:{...o, datasets:{bar:{categoryPercentage:.7, barPercentage:.9}}}});
+    legend("lg-xcty", [[S1,"Hybrid median"],[S2,"Remote median"]]);
+  }
+}
+
+// controls
+$("q1a-small").onchange = build;
+$("q1c-med").onchange = build;
+const seg = (aId, bId, set) => { $(aId).onclick = () => { set(0); $(aId).setAttribute("aria-pressed","true"); $(bId).setAttribute("aria-pressed","false"); build(); }; $(bId).onclick = () => { set(1); $(bId).setAttribute("aria-pressed","true"); $(aId).setAttribute("aria-pressed","false"); build(); }; };
+seg("q1b-mean","q1b-med", i => q1bStat = i ? "median" : "mean");
+seg("xm-med","xm-mean", i => xmStat = i ? "mean" : "median");
+document.querySelectorAll("#q3-pair button").forEach(btn => btn.onclick = () => { q3Pair = btn.dataset.k; document.querySelectorAll("#q3-pair button").forEach(x=>x.setAttribute("aria-pressed", x===btn)); build(); });
+
+// theme changes
+window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", build);
+new MutationObserver(build).observe(document.documentElement, {attributes:true, attributeFilter:["data-theme"]});
+
+// nav highlight
+const links = [...document.querySelectorAll("nav.bar a")];
+const obs = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) links.forEach(l => l.classList.toggle("on", l.getAttribute("href") === "#"+e.target.id)); }), {rootMargin:"-40% 0px -55% 0px"});
+document.querySelectorAll("main > section").forEach(s => obs.observe(s));
+
+if (window.Chart) build();
+else document.querySelectorAll(".chart").forEach(c => c.innerHTML = '<p class="muted small">Charts could not load. Please check your connection and refresh.</p>');
+</script>
+
+</body>
+</html>
