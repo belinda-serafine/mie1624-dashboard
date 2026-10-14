@@ -5,7 +5,7 @@ An interactive, client-facing dashboard that presents a statistical analysis of 
 1. Do **remote** developers earn more than **hybrid** developers?
 2. In the **US and Canada**, does salary differ by **education level** (Bachelor's, Master's, Professional degree)?
 
-**Live dashboard:** https://YOUR-USERNAME.github.io/mie1624-dashboard/
+**Live dashboard:** [https://belinda-serafine.github.io/mie1624-dashboard/](https://belinda-serafine.github.io/mie1624-dashboard/)
 
 ## Key findings
 
